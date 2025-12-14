@@ -1,0 +1,45 @@
+.vs/
+bin/
+obj/
+*.user
+*.suo
+# App configuration
+appsettings.json
+appsettings.*.json
+# Rider project config
+.idea/
+
+# Rider module files
+*.sln.iml
+
+# Rider workspace & tasks
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+
+# Rider dictionaries, shelves
+.idea/**/dictionaries
+.idea/**/shelf/
+
+# Rider project settings
+.idea/**/modules.xml
+.idea/**/contentModel.xml
+.idea/**/projectSettingsUpdater.xml
+
+# Rider caches & logs
+.idea/**/log/
+.idea/**/aws.xml
+.idea/**/sonarlint/
+.idea/**/keymaps.xml
+.idea/**/gradle.xml
+.idea/**/libraries/
+
+# JetBrains caches
+*.iws
+
+# ReSharper / JetBrains dotTools (optional but common in Rider)
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.dotCover
+*.dotTrace
+*.dotMemory
+

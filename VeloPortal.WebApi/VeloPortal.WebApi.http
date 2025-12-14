@@ -1,0 +1,6 @@
+@VeloPortal.WebApi_HostAddress = http://localhost:5237
+
+GET {{VeloPortal.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
