@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VeloPortal.Application\VeloPortal.Application.csproj" />
+    <ProjectReference Include="..\VeloPortal.Domain\VeloPortal.Domain.csproj" />
   </ItemGroup>
 
 </Project>
