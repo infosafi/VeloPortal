@@ -1,23 +1,27 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;
 
-namespace VeloPortal.Infrastructure.Service
+namespace VeloPortal.Infrastructure.Data.Repositories.Common
 {
-    public class JwtService : IJwtService
+    public class JwtRepository : IJwtService
     {
         private readonly JwtSettings _settings;
-        public JwtService(IOptions<JwtSettings> settings)
+        public JwtRepository(IOptions<JwtSettings> settings)
         {
             _settings = settings.Value;
         }
-        public string GenerateAccessToken(DtoPortalAuthUser? user)
+        public string GenerateAccessToken(DtoPortalUser? user)
         {
             if (user == null)
             {

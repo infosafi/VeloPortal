@@ -3,8 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;
-using VeloPortal.Infrastructure.Service;
-
+using VeloPortal.Infrastructure.Data.Repositories.Common;
 
 namespace VeloPortal.WebApi.Extensions
 {
@@ -38,8 +37,8 @@ namespace VeloPortal.WebApi.Extensions
             });
 
             #region common service
-            services.AddScoped<IJwtService, JwtService>();
-            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<IJwtService, JwtRepository>();
+            //services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             #endregion
             return services;
 
