@@ -9,7 +9,7 @@ namespace VeloPortal.Application.Interfaces.Common
 {
     public interface IJwtService
     {
-        string GenerateAccessToken(DtoPortalUser? user);
+        string GenerateAccessToken(DtoPortalAuthUser? user);
         string GenerateRefreshToken();
     }
 }
