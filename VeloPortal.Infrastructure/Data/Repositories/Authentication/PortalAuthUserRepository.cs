@@ -15,18 +15,15 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
     {
 
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
-        private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly SPProcessAccess? _spProcessAccess;
 
 
         public PortalAuthUserRepository(
           IDbContextFactory<VeloPortalDbContext> dbContextFactory,
-          IMapper mapper,
           IConfiguration configuration)
         {
             _dbContextFactory = dbContextFactory;
-            _mapper = mapper;
             _configuration = configuration;
 
             var connectionString = _configuration.GetConnectionString(DefaultSettings.DefaultDbconnection);
