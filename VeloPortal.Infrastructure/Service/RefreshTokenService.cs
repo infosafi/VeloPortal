@@ -6,13 +6,10 @@ using VeloPortal.Infrastructure.Data.DataContext;
 
 namespace VeloPortal.Infrastructure.Service
 {
-    public class RefreshTokenService(IDbContextFactory<VeloPortalDbContext> _dbContextFactory,
+    public class RefreshTokenService(IDbContextFactory<VeloPortalLogContext> _dbContextFactory,
     ILogger<RefreshTokenService> _logger
    ) : IRefreshTokenService
     {
-
-
-
         public async Task<RefreshToken?> GetByTokenAsync(string? token)
         {
             try

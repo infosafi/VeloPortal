@@ -58,26 +58,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
 
-            //var usercompany = await _companyRepo.GetUserWiseCompanyList(user.user_id, dto.comcod);
-            //if (usercompany == null || usercompany.Count() == 0)
-            //{
-            //    return BadRequest(new { Success = false, message = "User found but not associate with any Company" });
-
-            //}
-            //foreach (var company in usercompany)
-            //{
-            //    if (company.company_status == false)
-            //    {
-            //        return BadRequest(new { Success = false, message = "User Associated Company is In-Active" });
-
-            //    }
-            //}
-
-            //var userpagespriv = await _userRepo.GetUserPagesPrivilegInfo(dto.comcod, user.user_id, true, String.Empty);
-
-
-
-
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -87,14 +67,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 expires = DateTime.UtcNow.AddDays(7),
                 user_id = user.unq_id
             });
-
-            //string sessionid = AgentHelper.GenerateSessionId(user.user_id, dto.comcod ?? "");
-
-            //LoginLogs logobj = AgentHelper.MakeLoginLods(user.user_id, dto.comcod, dto.email_or_username, true, "",
-            //    dto.terminal_id, dto.user_agent, dto.macaddress, "", sessionid, dto.location);
-            //await _loginlogs.InsertOrUpdateLoginLogs(logobj, HelperEnums.Action.Add.ToString());
-
-            //EmpInf? empinfo = await _empRepo.GetEmployeeByUserIdAsync(user.user_id);
 
             return Ok(new
             {

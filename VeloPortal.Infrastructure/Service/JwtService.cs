@@ -31,7 +31,7 @@ namespace VeloPortal.Infrastructure.Service
             new Claim(JwtRegisteredClaimNames.Sub, user.unq_id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.user_email??""),
-            new Claim(JwtRegisteredClaimNames.Name, user.fullname??"")
+            new Claim(JwtRegisteredClaimNames.Name, user.username??"")
         };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret ?? ""));

@@ -1,12 +1,5 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
-using VeloPortal.Domain.Entities.Authentication;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
 {
@@ -17,7 +10,6 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         }
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
-        public DbSet<RefreshToken> RefreshToken { get; set; }
 
         #region Common       
 

@@ -35,7 +35,17 @@ namespace VeloPortal.WebApi.Extensions
                    .PersistKeysToDbContext<VeloPortalDbContext>()
                    .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
 
-        
+            // for log DB
+            var connectionStringlog = Configuration.GetConnectionString("VelocityLogConnection");
+
+            services.AddDbContextFactory<VeloPortalLogContext>(opt => opt.UseSqlServer(connectionStringlog));
+
+            ////Data Protection
+            services.AddDataProtection()
+                   // use 14-day lifetime instead of 90-day lifetime
+                   .PersistKeysToDbContext<VeloPortalLogContext>()
+                   .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
+
             #endregion DbConnection service end
 
             // Cross-Origin Resource Sharing (CORS)
