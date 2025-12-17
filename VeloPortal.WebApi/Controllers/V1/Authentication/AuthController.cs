@@ -31,42 +31,31 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [HttpPost("portal-login")]
         public async Task<IActionResult> Login(DtoPortalAuthUser dto)
         {
-            if (dto.comcod?.Length == 0)
+            if (dto.comcod.Length == 0)
             {
 
                 return BadRequest(new { Success = false, message = "Company Selection is missing!" });
 
             }
-            if (dto.email_or_username?.Length == 0)
+            if (dto.user_or_email.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Username or Email Mandatory!" });
 
             }
-            if (dto.password?.Length == 0)
+            if (dto.password.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Password Mandatory!" });
 
             }
             string encpassword = EncryptionExtension.PasswordEnc(dto.password);
-            var user = await _userRepo.ValidateCredentialsAsync(dto.comcod, dto.email_or_username, encpassword);
+            var user = await _userRepo.ValidateCredentialsAsync(dto.comcod, dto.user_type, dto.user_or_email, encpassword);
             if (user == null)
             {
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
-            if (user.user_id == 0)
+            if (user.unq_id == 0)
             {
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
-            }
-
-            if (user.is_active == false)
-            {
-                return BadRequest(new { Success = false, message = "User is In-active", twofactor = user.is_2fa });
-
-            }
-            if (user.is_2fa == true)
-            {
-                return Ok(new { Success = false, message = "Two-Factor Authentication need", twofactor = user.is_2fa });
-
             }
 
             //var usercompany = await _companyRepo.GetUserWiseCompanyList(user.user_id, dto.comcod);
@@ -92,12 +81,11 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
-            user.password = String.Empty;
             await _refreshRepo.SaveAsync(new RefreshToken
             {
                 token = refreshToken,
                 expires = DateTime.UtcNow.AddDays(7),
-                user_id = user.user_id
+                user_id = user.unq_id
             });
 
             //string sessionid = AgentHelper.GenerateSessionId(user.user_id, dto.comcod ?? "");

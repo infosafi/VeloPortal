@@ -3,9 +3,12 @@ using VeloPortal.WebApi.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+// Add Auto maper service
+builder.Services.AddMapperServices(builder.Configuration);
 // add Custom services
 builder.Services.AddAppServices(builder.Configuration);
+// add Rate limit Custom services
+builder.Services.AddCustomRateLimiting();
 // add Custom Swagger services
 builder.Services.AddCustomSwagger();
 // add JWT  services
