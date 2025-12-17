@@ -17,7 +17,7 @@ namespace VeloPortal.Infrastructure.Service
         {
             _settings = settings.Value;
         }
-        public string GenerateAccessToken(DtoPortalAuthUser? user)
+        public string GenerateAccessToken(DtoUserInf? user)
         {
             if (user == null)
             {
@@ -28,10 +28,10 @@ namespace VeloPortal.Infrastructure.Service
             {
                 var claims = new[]
              {
-            new Claim(JwtRegisteredClaimNames.Sub, user.user_id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.unq_id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.user_email??""),
-            new Claim(JwtRegisteredClaimNames.Name, user.full_name??"")
+            new Claim(JwtRegisteredClaimNames.Name, user.fullname??"")
         };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret ?? ""));
