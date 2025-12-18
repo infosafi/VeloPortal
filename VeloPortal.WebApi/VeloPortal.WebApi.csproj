@@ -22,4 +22,8 @@
     <ProjectReference Include="..\VeloPortal.Infrastructure\VeloPortal.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\V1\SystemConfig\" />
+  </ItemGroup>
+
 </Project>
