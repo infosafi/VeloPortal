@@ -29,7 +29,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Complain
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
-        public async Task<IEnumerable<DtoServiceRequest>?> GetUserConcernProjects(string? comcod, string sup_user_id)
+        public async Task<IEnumerable<DtoServiceRequest>?> GetUserConcernProjects(string? comcod, string user_role, string unq_id)
         {
             try
             {
@@ -38,7 +38,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Complain
                     return await Task.FromResult<IEnumerable<DtoServiceRequest>?>(null);
                 }
                 IEnumerable<DtoServiceRequest>? lst = null;
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_User_Concern_Projects", sup_user_id);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_User_Concern_Projects", user_role, unq_id);
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
                     return await Task.FromResult<IEnumerable<DtoServiceRequest>?>(null);
