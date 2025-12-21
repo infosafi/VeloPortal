@@ -124,7 +124,7 @@ namespace VeloPortal.WebApi.Extensions
                 app.UseSwaggerUI(c =>
                 {
 
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Velocity API v1");
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "VeloPortal API v1");
                     //c.RoutePrefix = "api-docs";
                     c.DocumentTitle = "VeloPortal API Documentation";
                     c.DisplayRequestDuration();
@@ -144,7 +144,7 @@ namespace VeloPortal.WebApi.Extensions
                 app.UseSwaggerUI(c =>
                 {
 
-                    c.SwaggerEndpoint("/veloportal/swagger/v1/swagger.json", "Velocity API v1");
+                    c.SwaggerEndpoint("/veloportal/swagger/v1/swagger.json", "VeloPortal API v1");
                     //c.RoutePrefix = "api-docs";
                     c.DocumentTitle = "VeloPortal API Documentation";
                     c.DisplayRequestDuration();
