@@ -15,7 +15,7 @@ builder.Services.AddCustomSwagger();
 builder.Services.AddJwtServices(builder.Configuration);
 
 var app = builder.Build();
-
+app.UsePathBase("/veloportal"); // for sub folder hosting
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
