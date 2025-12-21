@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="VeloPortal.Application/VeloPortal.Application.csproj" />
+  <Project Path="VeloPortal.Domain/VeloPortal.Domain.csproj" />
+  <Project Path="VeloPortal.Infrastructure/VeloPortal.Infrastructure.csproj" />
+  <Project Path="VeloPortal.WebApi/VeloPortal.WebApi.csproj" Id="2f35243e-fe31-457b-b98c-5e9aa2df2286" />
+</Solution>
