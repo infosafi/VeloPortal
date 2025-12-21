@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Application.Interfaces.Authentication;
-using VeloPortal.Application.Interfaces.Complain;
+using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
-using VeloPortal.Infrastructure.Data.Repositories.Complain;
+using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
 
 namespace VeloPortal.WebApi.Extensions
 {
@@ -77,8 +77,8 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
             #endregion
 
-            #region start Complain Service add
-            services.AddScoped<IServiceRequest, ServiceRequestRepository>();
+            #region start Service Request add
+            services.AddScoped<IServReqInf, ServReqInfRepository>();
             #endregion
             return services;
         }

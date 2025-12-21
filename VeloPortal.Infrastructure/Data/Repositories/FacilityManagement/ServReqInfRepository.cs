@@ -2,23 +2,24 @@
 using Microsoft.Extensions.Configuration;
 using System.Data;
 using VeloPortal.Application.DTOs.ServiceRequest;
-using VeloPortal.Application.Interfaces.Complain;
+using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.FacilityManagement;
+using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.SPHelper;
 
-namespace VeloPortal.Infrastructure.Data.Repositories.Complain
+namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
 {
-    public class ServiceRequestRepository : IServiceRequest
+    public class ServReqInfRepository : IServReqInf
     {
-
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
         private readonly IConfiguration _configuration;
         private readonly SPProcessAccess? _spProcessAccess;
 
 
-        public ServiceRequestRepository(
+        public ServReqInfRepository(
           IDbContextFactory<VeloPortalDbContext> dbContextFactory,
           IConfiguration configuration)
         {
@@ -51,6 +52,45 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Complain
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<IEnumerable<DtoServiceRequest>?>(null);
+            }
+        }
+
+
+        public async Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    if (action == HelperEnums.Action.Add.ToString())
+                    {
+                        await dbContext.ServReqInf.AddAsync(obj);
+                        await dbContext.SaveChangesAsync();
+
+                        await dbContext.Entry(obj).ReloadAsync();
+                        return obj;
+                    }
+                    else
+                    {
+                        ServReqInf? existloandata = await dbContext.ServReqInf.AsNoTracking().FirstOrDefaultAsync(p => p.service_req_id == obj.service_req_id);
+
+                        if (existloandata != null)
+                        {
+                            dbContext.ServReqInf.Update(obj);
+                            await dbContext.SaveChangesAsync();
+                            return obj;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return null;
             }
         }
     }
