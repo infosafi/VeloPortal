@@ -21,6 +21,7 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public string special_notes { get; set; } = String.Empty;
         public int nursing_by { get; set; }
         public string req_medium { get; set; } = String.Empty;
+        public string creator_role { get; set; } = String.Empty;
         public int created_by { get; set; }
         public DateTime created_date { get; set; }
         public bool is_done { get; set; }
@@ -29,7 +30,7 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public int satisfaction { get; set; }
 
         public ServReqInf() { }
-        public ServReqInf(long service_req_id_, string comcod_, string service_no_, string acccode_, string unitcode_, string custcode_, int priority_, DateTime service_req_date_, DateTime est_done_date_, string complain_details_, string special_notes_, int nursing_by_, string req_medium_, int created_by_, DateTime created_date_, bool is_done_, string current_step_, string customer_feedback_, int satisfaction_)
+        public ServReqInf(long service_req_id_, string comcod_, string service_no_, string acccode_, string unitcode_, string custcode_, int priority_, DateTime service_req_date_, DateTime est_done_date_, string complain_details_, string special_notes_, int nursing_by_, string req_medium_, string creator_role_, int created_by_, DateTime created_date_, bool is_done_, string current_step_, string customer_feedback_, int satisfaction_)
         {
             this.service_req_id = service_req_id_;
             this.comcod = comcod_;
@@ -44,6 +45,7 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
             this.special_notes = special_notes_;
             this.nursing_by = nursing_by_;
             this.req_medium = req_medium_;
+            this.creator_role = creator_role_;
             this.created_by = created_by_;
             this.created_date = created_date_;
             this.is_done = is_done_;
