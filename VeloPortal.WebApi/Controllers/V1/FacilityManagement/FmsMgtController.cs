@@ -57,14 +57,27 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         [HttpPost("save-service-request-info")]
         public async Task<IActionResult> SaveLeadPreference([FromBody] ServReqInf servReqInf)
         {
-            var savedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Add.ToString());
-
-            if (savedSerReqInf == null)
+            if (servReqInf.service_req_id == 0)
             {
-                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Service request info save Failed"));
+                var savedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Add.ToString());
+
+                if (savedSerReqInf == null)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Service request info save Failed"));
+                }
+
+                return Ok(ApiResponse<dynamic>.SuccessResponse(savedSerReqInf, message: "Service request info saved successfully"));
             }
 
-            return Ok(ApiResponse<dynamic>.SuccessResponse(savedSerReqInf, message: "Service request info saved successfully"));
+            var updatedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Update.ToString());
+
+            if (updatedSerReqInf == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Service request info Update Failed"));
+            }
+
+            return Ok(ApiResponse<ServReqInf>.SuccessResponse(updatedSerReqInf, message: "Service request info updated successfully"));
+
         }
 
     }

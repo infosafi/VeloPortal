@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using VeloPortal.Application.DTOs.ServiceRequest;
 using VeloPortal.Application.Interfaces.FacilityManagement;
@@ -15,17 +16,19 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
     public class ServReqInfRepository : IServReqInf
     {
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
+        private readonly ILogger<ServReqInfRepository> _logger;
         private readonly IConfiguration _configuration;
         private readonly SPProcessAccess? _spProcessAccess;
 
 
         public ServReqInfRepository(
           IDbContextFactory<VeloPortalDbContext> dbContextFactory,
+          ILogger<ServReqInfRepository> logger,
           IConfiguration configuration)
         {
             _dbContextFactory = dbContextFactory;
+            _logger = logger;
             _configuration = configuration;
-
             var connectionString = _configuration.GetConnectionString(DefaultSettings.DefaultDbconnection);
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
@@ -60,38 +63,71 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
         {
             try
             {
-                using (var dbContext = _dbContextFactory.CreateDbContext())
-                {
-                    if (action == HelperEnums.Action.Add.ToString())
-                    {
-                        await dbContext.ServReqInf.AddAsync(obj);
-                        await dbContext.SaveChangesAsync();
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-                        await dbContext.Entry(obj).ReloadAsync();
-                        return obj;
+                if (action == HelperEnums.Action.Add.ToString())
+                {
+                    if (_spProcessAccess == null)
+                    {
+                        _logger.LogWarning("_spProcessAccess is not initialized.");
+                        return null;
+                    }
+
+                    DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Latest_Service_Code");
+
+                    if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var lst = ds.Tables[0].DataTableToDynamicList();
+
+                    var latestServiceNo = lst.First().service_no.ToString();
+
+                    if (string.IsNullOrWhiteSpace(latestServiceNo))
+                    {
+                        return null;
                     }
                     else
                     {
-                        ServReqInf? existloandata = await dbContext.ServReqInf.AsNoTracking().FirstOrDefaultAsync(p => p.service_req_id == obj.service_req_id);
+                        obj.service_no = latestServiceNo;
 
-                        if (existloandata != null)
-                        {
-                            dbContext.ServReqInf.Update(obj);
-                            await dbContext.SaveChangesAsync();
-                            return obj;
-                        }
-                        else
-                        {
-                            return null;
-                        }
+                        dbContext.ServReqInf.Add(obj);
                     }
                 }
+
+                else
+                {
+                    // Checking if Service Request Info exist or not
+                    var exist = await dbContext.ServReqInf.FirstOrDefaultAsync(p => p.comcod == obj.comcod && p.service_req_id == obj.service_req_id && p.service_no == obj.service_no);
+
+                    if (exist == null)
+                    {
+                        return null;
+                    }
+
+                    exist.priority = obj.priority;
+                    exist.req_medium = obj.req_medium;
+                    exist.complain_details = obj.complain_details;
+                    exist.special_notes = obj.special_notes;
+
+                    //Update
+                    dbContext.ServReqInf.Update(obj);
+                }
+
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return obj;
             }
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Service Request Info Information Insert or Update Failed");
                 return null;
             }
         }
+
     }
 }
