@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Application.Interfaces.Authentication;
+using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
+using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
+using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
+using VeloPortal.Infrastructure.Service;
 
 namespace VeloPortal.WebApi.Extensions
 {
@@ -72,9 +76,18 @@ namespace VeloPortal.WebApi.Extensions
                 //        });
             });
 
+            services.Configure<FtpSettings>(
+            Configuration.GetSection("FtpSettings"));
+            services.AddScoped<IFtpService, FtpService>();
+
+
 
             #region start Authentication Service add
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
+            #endregion
+
+            #region Documentation Service add
+            services.AddScoped<IDocInfDet, DocInfDetRepository>();
             #endregion
 
             #region start Service Request add
