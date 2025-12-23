@@ -33,6 +33,32 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<IEnumerable<DtoPortalUsersServiceRequest>?> GetPortalUsersServiceRequests(string? comcod, string user_role, string unq_id)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoPortalUsersServiceRequest>?>(null);
+                }
+                IEnumerable<DtoPortalUsersServiceRequest>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Portal_Users_Service_Requests", user_role, unq_id);
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoPortalUsersServiceRequest>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoPortalUsersServiceRequest>();
+                return await Task.FromResult<IEnumerable<DtoPortalUsersServiceRequest>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoPortalUsersServiceRequest>?>(null);
+            }
+        }
+
+
         public async Task<IEnumerable<DtoServiceRequest>?> GetUserConcernProjects(string? comcod, string user_role, string unq_id)
         {
             try

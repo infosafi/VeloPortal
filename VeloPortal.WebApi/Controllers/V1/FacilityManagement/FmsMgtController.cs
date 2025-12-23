@@ -26,6 +26,46 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         }
 
         /// <summary>
+        /// Retrieves the list of service requests for a specific user.
+        /// </summary>
+        /// <param name="comcod">
+        /// Optional. The company code to filter the results. Can be null.
+        /// </param>
+        /// <param name="user_role">
+        /// Required. The role of the user (e.g., Admin, User, Engineer).
+        /// </param>
+        /// <param name="unq_id">
+        /// Required. The unique identifier of the user.
+        /// </param>
+        /// <returns>
+        /// Returns an <see cref="ApiResponse"/> containing a list of <see cref="DtoPortalUsersServiceRequest"/> objects
+        /// if records are found. If no records exist, returns a 404 Not Found response with an error message.
+        /// </returns>
+        /// <response code="200">
+        /// Service requests retrieved successfully. The response contains the list of requests and a message indicating
+        /// the number of requests found.
+        /// </response>
+        /// <response code="404">
+        /// No service requests found for the specified user. The response contains an error message.
+        /// </response>
+        /// <response code="500">
+        /// Internal server error if an unexpected error occurs during retrieval.
+        /// </response>
+        [HttpGet("get-portal-users-service-requests")]
+        public async Task<IActionResult> GetPortalUsersServiceRequestsList(string? comcod, string user_role, string unq_id)
+        {
+            var response = await _servReqInf.GetPortalUsersServiceRequests(comcod, user_role, unq_id);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "User service requests not found" },
+                    ErrorTrackingExtension.ErrorMsg ?? "An unexpected error occurred"));
+
+            return Ok(ApiResponse<IEnumerable<DtoPortalUsersServiceRequest>>.SuccessResponse(response, message: response.Count() + " user service request(s) found"));
+        }
+
+
+        /// <summary>
         /// Get concern projects for a specific user
         /// </summary>
         /// <param name="comcod">Company code (optional)</param>
