@@ -19,9 +19,9 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload(IFormFile file)
+        public async Task<IActionResult> Upload(IFormFile file, string path= "")
         {
-            var url = await _ftpService.UploadAsync(file, "SERVICEDOC");
+            var url = await _ftpService.UploadAsync(file, path);
             return Ok(new { url });
         }
 
