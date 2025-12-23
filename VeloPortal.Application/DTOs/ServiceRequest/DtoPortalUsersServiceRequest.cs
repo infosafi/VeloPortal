@@ -14,6 +14,7 @@ namespace VeloPortal.Application.DTOs.ServiceRequest
         public DateTime service_req_date { get; set; }
         public string complain_details { get; set; } = String.Empty;
         public string current_step { get; set; } = String.Empty;
+        public string current_stepdesc { get; set; } = String.Empty;
         public bool is_done { get; set; }
         public DateTime est_done_date { get; set; }
     }
