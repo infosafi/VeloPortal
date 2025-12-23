@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
@@ -17,6 +18,9 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #endregion
         #region FMS
         public DbSet<ServReqInf> ServReqInf { get; set; }
+        #endregion
+        #region Documentation
+        public DbSet<DocInfDet> DocInfDet { get; set; }
         #endregion
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
