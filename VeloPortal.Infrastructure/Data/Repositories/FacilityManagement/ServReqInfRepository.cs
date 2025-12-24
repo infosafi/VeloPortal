@@ -33,6 +33,51 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<DtoServiceRequestDetails?> GetSingleServiceRequestDetailsInformation(string? comcod, long? service_req_id)
+        {
+            try
+            {
+                await Task.Delay(1);
+
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
+                    return null;
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Single_Service_Info", service_req_id.ToString() ?? "");
+
+                if (ds == null || ds.Tables.Count < 3)
+                {
+                    _logger.LogWarning($"SP 'Get_Single_Service_Info' returned fewer than 3 tables for service_req_id: {service_req_id}");
+                    return null;
+                }
+
+                IEnumerable<dynamic>? serviceInfo = ds.Tables[0].DataTableToDynamicList();
+                IEnumerable<dynamic>? serviceProblemInfo = ds.Tables[1].DataTableToDynamicList();
+                IEnumerable<dynamic>? serviceResourceInfo = ds.Tables[2].DataTableToDynamicList();
+                IEnumerable<dynamic>? serviceTimelineInfo = ds.Tables[3].DataTableToDynamicList();
+                IEnumerable<dynamic>? serviceExecutionTimeline = ds.Tables[4].DataTableToDynamicList();
+                var resultDto = new DtoServiceRequestDetails
+                {
+                    ServiceInfo = serviceInfo,
+                    ServiceProblemInfo = serviceProblemInfo,
+                    ServiceResourceInfo = serviceResourceInfo,
+                    ServiceTimelineInfo = serviceTimelineInfo,
+                    serviceExecution = serviceExecutionTimeline
+                };
+
+                return resultDto;
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Single Service Details information Failed to Retrive");
+                return null;
+            }
+        }
+
         public async Task<IEnumerable<DtoPortalUsersServiceRequest>?> GetPortalUsersServiceRequests(string? comcod, string user_role, string unq_id)
         {
             try
