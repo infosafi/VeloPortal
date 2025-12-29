@@ -129,7 +129,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
             }
         }
 
-
         public async Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action)
         {
             try
@@ -153,7 +152,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     }
 
                     var lst = ds.Tables[0].DataTableToDynamicList();
-
                     var latestServiceNo = lst.First().service_no.ToString();
 
                     if (string.IsNullOrWhiteSpace(latestServiceNo))
@@ -163,28 +161,22 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     else
                     {
                         obj.service_no = latestServiceNo;
-
                         dbContext.ServReqInf.Add(obj);
                     }
                 }
-
                 else
                 {
-                    // Checking if Service Request Info exist or not
-                    var exist = await dbContext.ServReqInf.FirstOrDefaultAsync(p => p.comcod == obj.comcod && p.service_req_id == obj.service_req_id && p.service_no == obj.service_no);
+                    var exist = await dbContext.ServReqInf.FirstOrDefaultAsync(p =>
+                        p.comcod == obj.comcod &&
+                        p.service_req_id == obj.service_req_id &&
+                        p.service_no == obj.service_no);
 
                     if (exist == null)
                     {
                         return null;
                     }
 
-                    exist.priority = obj.priority;
-                    exist.req_medium = obj.req_medium;
-                    exist.complain_details = obj.complain_details;
-                    exist.special_notes = obj.special_notes;
-
-                    //Update
-                    dbContext.ServReqInf.Update(obj);
+                    dbContext.Entry(exist).CurrentValues.SetValues(obj);
                 }
 
                 await dbContext.SaveChangesAsync();
@@ -199,6 +191,5 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 return null;
             }
         }
-
     }
 }
