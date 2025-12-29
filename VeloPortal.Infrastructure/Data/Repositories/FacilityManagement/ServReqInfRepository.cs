@@ -158,11 +158,9 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     {
                         return null;
                     }
-                    else
-                    {
-                        obj.service_no = latestServiceNo;
-                        dbContext.ServReqInf.Add(obj);
-                    }
+
+                    obj.service_no = latestServiceNo;
+                    dbContext.ServReqInf.Add(obj);
                 }
                 else
                 {
@@ -176,7 +174,8 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                         return null;
                     }
 
-                    dbContext.Entry(exist).CurrentValues.SetValues(obj);
+                    exist.customer_feedback = obj.customer_feedback;
+                    exist.satisfaction = obj.satisfaction;
                 }
 
                 await dbContext.SaveChangesAsync();
