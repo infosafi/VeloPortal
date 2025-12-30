@@ -28,9 +28,21 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
         [HttpGet("download")]
         public async Task<IActionResult> Download(string fileUrl)
         {
-            var base64 = await _ftpService.DownloadAsBase64Async(fileUrl);
-            return Ok(base64);
+            try
+            {
+                var base64Data = await _ftpService.DownloadAsBase64Async(fileUrl);
+                return Ok(new
+                {
+                    fileName = Path.GetFileName(fileUrl),
+                    base64 = base64Data
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
 
         [HttpDelete("delete")]
         public async Task<IActionResult> Delete(string fileUrl)
