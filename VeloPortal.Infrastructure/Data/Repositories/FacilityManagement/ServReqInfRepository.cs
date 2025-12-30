@@ -190,5 +190,30 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 return null;
             }
         }
+
+        public async Task<IEnumerable<DtoUserServiceRequestCounter>?> GetUserServiceReqeustCounter(string? comcod, string user_role, string unq_id)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoUserServiceRequestCounter>?>(null);
+                }
+                IEnumerable<DtoUserServiceRequestCounter>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Portal_Users_Service_Requests_Counter", user_role, unq_id);
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoUserServiceRequestCounter>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoUserServiceRequestCounter>();
+                return await Task.FromResult<IEnumerable<DtoUserServiceRequestCounter>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoUserServiceRequestCounter>?>(null);
+            }
+        }
     }
 }

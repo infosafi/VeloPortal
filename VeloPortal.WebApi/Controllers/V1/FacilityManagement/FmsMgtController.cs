@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.ServiceRequest;
+using VeloPortal.Application.Interfaces.Complain;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.FacilityManagement;
@@ -153,6 +154,27 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             }
 
             return Ok(ApiResponse<ServReqInf>.SuccessResponse(updatedSerReqInf, message: "Service request info updated successfully"));
+
+        }
+
+        /// <summary>
+        /// Get User wise Service Request Counter
+        /// </summary>
+        /// <param name="comcod">Company code (optional)</param>
+        /// <param name="user_role">User role (Admin, User, Engineer, etc.)</param>
+        /// <param name="unq_id">Unique user identifier</param>
+        /// <returns>Request Counter</returns>
+
+        [HttpGet("get-user-service-request-counter")]
+        public async Task<IActionResult> GetUserServiceRequestCounter(string? comcod, string user_role, string unq_id)
+        {
+            var response = await _servReqInf.GetUserServiceReqeustCounter(comcod, user_role, unq_id);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "User Service Request Counter Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            return Ok(ApiResponse<IEnumerable<DtoUserServiceRequestCounter>>.SuccessResponse(response, message: response.Count() + " User Service Request Counter Found"));
 
         }
 
