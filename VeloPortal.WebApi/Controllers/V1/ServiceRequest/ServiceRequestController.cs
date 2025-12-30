@@ -37,17 +37,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Complain
             return Ok(ApiResponse<IEnumerable<DtoServiceRequest>>.SuccessResponse(response, message: response.Count() + " User Concern Project Found"));
 
         }
-        [HttpGet("get-user-service-request-counter")]
-        public async Task<IActionResult> GetUserServiceRequestCounter(string? comcod, string user_role, string unq_id)
-        {
-            var response = await _serviceRequest.GetUserConcernProjects(comcod, user_role, unq_id);
-
-            if (response == null)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "User Concern Project not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
-
-            return Ok(ApiResponse<IEnumerable<DtoServiceRequest>>.SuccessResponse(response, message: response.Count() + " User Concern Project Found"));
-
-        }
+       
     }
 }

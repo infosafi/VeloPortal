@@ -14,5 +14,7 @@ namespace VeloPortal.Application.DTOs.Common
         public string? username { get; set; }
         public string? user_email { get; set; }
         public string? user_phone { get; set; }
+        public string? user_role { get; set; }
+        public string? rolename { get; set; }
     }
 }

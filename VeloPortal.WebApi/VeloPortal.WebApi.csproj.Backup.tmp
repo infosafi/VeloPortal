@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Controllers\V1\SystemConfig\**" />
+    <Content Remove="Controllers\V1\SystemConfig\**" />
+    <EmbeddedResource Remove="Controllers\V1\SystemConfig\**" />
+    <None Remove="Controllers\V1\SystemConfig\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
 	<PackageReference Include="AutoMapper" Version="12.0.0" />
