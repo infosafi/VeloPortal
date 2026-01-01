@@ -77,5 +77,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 message = "Successfully Logged In"
             });
         }
+
+        
     }
 }
