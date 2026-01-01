@@ -253,5 +253,37 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 return null;
             }
         }
+
+        public async Task<bool> InsertFeedbackServReqInf(DtoServiceRequestFeedback obj)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                var existingData = await dbContext.ServReqInf
+                    .FirstOrDefaultAsync(x =>
+                        x.comcod == obj.comcod &&
+                        x.service_req_id == obj.service_req_id &&
+                        x.service_no == obj.service_no);
+
+                if (existingData == null)
+                {
+                    return false;
+                }
+
+                existingData.satisfaction = obj.satisfaction;
+                existingData.customer_feedback = obj.customer_feedback;
+
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Service Request Feedback Update Failed");
+                return false;
+            }
+        }
+
     }
 }
