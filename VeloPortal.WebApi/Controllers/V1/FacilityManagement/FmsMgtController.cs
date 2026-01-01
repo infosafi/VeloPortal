@@ -213,5 +213,24 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             }
 
         }
+
+        /// <summary>
+        /// Create or update a service request
+        /// </summary>
+        /// <param name="obj">Service request information</param>
+        /// <returns>Saved or updated service request data</returns>
+        /// <response code="200">Service request saved successfully</response>
+        /// <response code="400">Failed to save service request</response>
+        [HttpPost("save-service-request-feedback")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SaveServiceRequestFeedback([FromBody] DtoServiceRequestFeedback obj)
+        {
+            var updatedSerReqInf = await _servReqInf.InsertFeedbackServReqInf(obj);
+            if (updatedSerReqInf == false)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Service request info Update Failed"));
+            }
+            return Ok(ApiResponse<bool>.SuccessResponse(updatedSerReqInf, message: "Service request info updated successfully"));
+        }
     }
 }
