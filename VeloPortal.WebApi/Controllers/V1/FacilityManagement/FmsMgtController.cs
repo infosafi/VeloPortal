@@ -178,5 +178,40 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
 
         }
 
+        /// <summary>
+        /// Get Single service details Info
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="service_req_id">This paramter is for service request id , such like 1,2,3</param> 
+        /// <returns>Signle service Details Infomation</returns>
+        [HttpGet("get-single-service-details-public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetSinglePublicServiceDetails(string? comcod, long? service_req_id)
+        {
+            try
+            {
+                if (service_req_id == null || service_req_id == 0)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "service_req_id Should not Empty or null"));
+                }
+                var response = await _servReqInf.GetSingleServiceRequestDetailsPublicInformation(comcod, service_req_id);
+
+                if (response == null)
+                    return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Single service details public info not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+                int serviceCount = response.ServiceInfo?.Count() ?? 0;
+
+                if (serviceCount == 0)
+                    return NotFound(ApiResponse<DtoPublicServiceRequestDetails>.SuccessResponse(response, message: "No Single service details public found for the given ID."));
+
+
+                return Ok(ApiResponse<DtoPublicServiceRequestDetails>.SuccessResponse(response, message: $"Single service details public loaded successfully. (Data Found: {serviceCount})"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Service resources: {ex.Message}" }, "Internal Server Error"));
+            }
+
+        }
     }
 }
