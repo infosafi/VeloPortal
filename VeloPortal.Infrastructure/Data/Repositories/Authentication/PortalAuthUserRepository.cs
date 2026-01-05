@@ -16,6 +16,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
 
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
         private readonly IConfiguration _configuration;
+   
         private readonly SPProcessAccess? _spProcessAccess;
 
 
@@ -25,6 +26,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         {
             _dbContextFactory = dbContextFactory;
             _configuration = configuration;
+
 
             var connectionString = _configuration.GetConnectionString(DefaultSettings.DefaultDbconnection);
             _spProcessAccess = new SPProcessAccess(connectionString);
@@ -57,5 +59,43 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 return await Task.FromResult<DtoUserInf?>(null);
             }
         }
+
+        //public async Task<DtoUserInf?> GetUserInfoByIdAsync(int user_id)
+        //{
+
+        //    try
+        //    {
+        //        using (var dbContext = _dbContextFactory.CreateDbContext())
+        //        {
+        //            var userinfo = await dbContext.UserInf.FirstOrDefaultAsync(p => p.user_id == user_id);
+        //            return _mapper.Map<DtoUserInf>(userinfo);
+        //        }
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorTrackingExtension.SetError(ex);
+        //        return null;
+        //    }
+        //}
+
+        //public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string? email_or_phone)
+        //{
+
+        //    try
+        //    {
+        //        using (var dbContext = _dbContextFactory.CreateDbContext())
+        //        {
+        //            var userinfo = await dbContext.UserInf.FirstOrDefaultAsync(p => (p.user_email == email_or_phone || p.user_name == email_or_phone));
+        //            return _mapper.Map<DtoUserInf>(userinfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorTrackingExtension.SetError(ex);
+        //        _logger.LogError(ex, "User Information Retrival Failed");
+        //        return null;
+        //    }
+        //}
     }
 }
