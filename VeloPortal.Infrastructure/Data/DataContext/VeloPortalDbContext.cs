@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 
@@ -12,6 +13,11 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         }
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+
+        #region Authentication
+        public DbSet<PassRecovery> PassRecovery { get; set; }
+
+        #endregion
 
         #region Common       
 
