@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Data;
 using VeloPortal.Application.DTOs.Common;
@@ -79,23 +78,33 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         //    }
         //}
 
-        //public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string? email_or_phone)
-        //{
+        public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email, string user_role)
+        {
 
-        //    try
-        //    {
-        //        using (var dbContext = _dbContextFactory.CreateDbContext())
-        //        {
-        //            var userinfo = await dbContext.UserInf.FirstOrDefaultAsync(p => (p.user_email == email_or_phone || p.user_name == email_or_phone));
-        //            return _mapper.Map<DtoUserInf>(userinfo);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorTrackingExtension.SetError(ex);
-        //        _logger.LogError(ex, "User Information Retrival Failed");
-        //        return null;
-        //    }
-        //}
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<DtoUserInf?>(null);
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_Portal_User_Info", user_type, user_or_email, user_role);
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<DtoUserInf?>(null);
+                }
+
+                var userList = ds.Tables[0].DataTableToList<DtoUserInf>();
+                var user = userList?.FirstOrDefault();
+
+                return await Task.FromResult(user);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<DtoUserInf?>(null);
+            }
+        }
     }
 }
