@@ -131,63 +131,63 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// The generated OTP is valid for 5 minutes. The request logs IP address and user-agent info for audit purposes. 
         /// If the user does not exist or is inactive, no email is sent.
         /// </remarks>
-        //[HttpPost("forgot-password")]
-        //public async Task<IActionResult> ForgotPassword([FromBody] DtoUserForgotPassword dto)
-        //{
-        //    if (string.IsNullOrWhiteSpace(dto.email_or_phone))
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Phone or Email is required."));
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] DtoUserForgotPassword dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.user_or_email))
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Phone or Email is required."));
 
-        //    var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.email_or_phone);
-        //    if (user == null || user.unq_id == 0)
-        //        return NotFound(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "User not found." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.user_role);
+            if (user == null || user.unq_id == 0)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "User not found." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
-        //    // Generate 6-digit OTP and expiry
-        //    var otp = new Random().Next(100000, 999999).ToString();
-        //    var createdDate = DateTime.UtcNow;
-        //    var expiryDate = createdDate.AddMinutes(5);
+            // Generate 6-digit OTP and expiry
+            var otp = new Random().Next(100000, 999999).ToString();
+            var createdDate = DateTime.UtcNow;
+            var expiryDate = createdDate.AddMinutes(5);
 
-        //    // Get client IP and user-agent
-        //    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            //// Get client IP and user-agent
+            //var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
 
-        //    // Build PassRecovery entity
-        //    var passRecovery = new PassRecovery
-        //    {
-        //        user_id = user.unq_id,
-        //        user_email = user.user_email,
-        //        recovery_otp = otp,
-        //        created_date = createdDate,
-        //        expiry_date = expiryDate,
-        //        execution_date = DateTime.Parse("1900-01-01"),
-        //        request_agent = dto.user_agent,
-        //        ip_address = ipAddress,
-        //        is_recovered = false,
-        //        is_expired = false
-        //    };
+            //// Build PassRecovery entity
+            //var passRecovery = new PassRecovery
+            //{
+            //    user_id = user.unq_id,
+            //    user_email = user.user_email,
+            //    recovery_otp = otp,
+            //    created_date = createdDate,
+            //    expiry_date = expiryDate,
+            //    execution_date = DateTime.Parse("1900-01-01"),
+            //    request_agent = dto.user_agent,
+            //    ip_address = ipAddress,
+            //    is_recovered = false,
+            //    is_expired = false
+            //};
 
-        //    // Save to DB
-        //    var result = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
-        //    if (!result)
-        //        return NotFound(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            //// Save to DB
+            //var result = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
+            //if (!result)
+            //    return NotFound(ApiResponse<string>.FailureResponse(
+            //        new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
-        //    // Compose and send OTP email
-        //    var subject = "Your Password Reset OTP";
-        //    var message = $@"
-        //                    <p>Hello {user.user_name},</p>
-        //                    <p>You requested to reset your password. Use the OTP below to proceed:</p>
-        //                    <h2>{otp}</h2>
-        //                    <p>This OTP is valid for 5 minutes.</p>
-        //                    <p>If you did not request this, please ignore this email.</p>
-        //                    <br />
-        //                    <p>Thank you,<br/>Support Team</p>";
+            // Compose and send OTP email
+            var subject = "Your Password Reset OTP";
+            var message = $@"
+                            <p>Hello {user.fullname},</p>
+                            <p>You requested to reset your password. Use the OTP below to proceed:</p>
+                            <h2>{otp}</h2>
+                            <p>This OTP is valid for 5 minutes.</p>
+                            <p>If you did not request this, please ignore this email.</p>
+                            <br />
+                            <p>Thank you,<br/>Support Team</p>";
 
-        //    await EmailHelper.SendEmail(user.user_email, subject, message);
+            await EmailHelper.SendEmail(user.user_email, subject, message);
 
-        //    return Ok(ApiResponse<bool>.SuccessResponse(true, message: "OTP sent to registered email address."));
-        //}
+            return Ok(ApiResponse<bool>.SuccessResponse(true, message: "OTP sent to registered email address."));
+        }
 
         ///// <summary>
         ///// Verifies the 6-digit OTP.
