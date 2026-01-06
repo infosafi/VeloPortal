@@ -11,6 +11,6 @@ namespace VeloPortal.Application.DTOs.Authentication
         public string comcod { get; set; }
         public string user_type { get; set; } = String.Empty;
         public string user_or_email { get; set; }
-        public string user_role { get; set; }
+        public string? user_agent { get; set; } = String.Empty;
     }
 }

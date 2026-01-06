@@ -21,15 +21,15 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         private readonly IJwtService _jwtService;
         private readonly IRefreshTokenService _refreshRepo;
         private readonly IPortalAuthUser _userRepo;
-
+        private readonly IPassRecovery _passRecovery;
 
         public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo,
-            IPortalAuthUser userRepo)
+            IPortalAuthUser userRepo, IPassRecovery passRecovery)
         {
             _jwtService = jwtService;
             _refreshRepo = refreshRepo;
             _userRepo = userRepo;
-
+            _passRecovery = passRecovery;
         }
 
 
@@ -138,7 +138,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 return BadRequest(ApiResponse<string>.FailureResponse(
                     new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Phone or Email is required."));
 
-            var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.user_role);
+            var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email);
             if (user == null || user.unq_id == 0)
                 return NotFound(ApiResponse<string>.FailureResponse(
                     new List<string> { "User not found." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
@@ -148,30 +148,31 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             var createdDate = DateTime.UtcNow;
             var expiryDate = createdDate.AddMinutes(5);
 
-            //// Get client IP and user-agent
-            //var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            // Get client IP and user-agent
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
 
-            //// Build PassRecovery entity
-            //var passRecovery = new PassRecovery
-            //{
-            //    user_id = user.unq_id,
-            //    user_email = user.user_email,
-            //    recovery_otp = otp,
-            //    created_date = createdDate,
-            //    expiry_date = expiryDate,
-            //    execution_date = DateTime.Parse("1900-01-01"),
-            //    request_agent = dto.user_agent,
-            //    ip_address = ipAddress,
-            //    is_recovered = false,
-            //    is_expired = false
-            //};
+            // Build PassRecovery entity
+            var passRecovery = new PassRecovery
+            {
+                user_id = user.unq_id,
+                user_email = user.user_email,
+                recovery_otp = otp,
+                created_date = createdDate,
+                expiry_date = expiryDate,
+                execution_date = DateTime.Parse("1900-01-01"),
+                request_agent = dto.user_agent,
+                ip_address = ipAddress,
+                is_recovered = false,
+                is_expired = false,
+                portal_role = "51"
+            };
 
-            //// Save to DB
-            //var result = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
-            //if (!result)
-            //    return NotFound(ApiResponse<string>.FailureResponse(
-            //        new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            // Save to DB
+            var result = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
+            if (!result)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
             // Compose and send OTP email
             var subject = "Your Password Reset OTP";
@@ -189,130 +190,131 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             return Ok(ApiResponse<bool>.SuccessResponse(true, message: "OTP sent to registered email address."));
         }
 
-        ///// <summary>
-        ///// Verifies the 6-digit OTP.
-        ///// </summary>
-        ///// <param name="dto">Contains the OTP entered by the user.</param>
-        ///// <returns>
-        ///// 200 OK if OTP is sent successfully.  
-        ///// 400 Bad Request for invalid input or inactive user.  
-        ///// 404 Not Found if the user does not exist or OTP storage fails.
-        ///// </returns>
-        ///// <remarks>
-        ///// Generates a one-time 6-digit OTP valid for 5 minutes.   
-        ///// No email is sent if the user is inactive or not found.
-        ///// </remarks>
-        //[HttpPost("verify-otp")]
-        //public async Task<IActionResult> VerifyOtp([FromBody] DtoVerifyOtp dto)
-        //{
-        //    if (string.IsNullOrWhiteSpace(dto.otp))
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "OTP is required." }, "Invalid input."));
+        /// <summary>
+        /// Verifies the 6-digit OTP.
+        /// </summary>
+        /// <param name="dto">Contains the OTP entered by the user.</param>
+        /// <returns>
+        /// 200 OK if OTP is sent successfully.  
+        /// 400 Bad Request for invalid input or inactive user.  
+        /// 404 Not Found if the user does not exist or OTP storage fails.
+        /// </returns>
+        /// <remarks>
+        /// Generates a one-time 6-digit OTP valid for 5 minutes.   
+        /// No email is sent if the user is inactive or not found.
+        /// </remarks>
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] DtoVerifyOtp dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.otp))
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "OTP is required." }, "Invalid input."));
 
-        //    //  Fetch latest OTP record
-        //    var otpRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
-        //    if (otpRecord == null)
-        //        return NotFound(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Invalid or expired OTP." }, "OTP not found."));
+            //  Fetch latest OTP record
+            var otpRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
+            if (otpRecord == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Invalid or expired OTP." }, "OTP not found."));
 
-        //    //  Check OTP state
-        //    if (otpRecord.is_recovered)
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "OTP already used." }, "Invalid OTP."));
+            //  Check OTP state
+            if (otpRecord.is_recovered)
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "OTP already used." }, "Invalid OTP."));
 
-        //    if (otpRecord.is_expired || DateTime.UtcNow > otpRecord.expiry_date)
-        //    {
-        //        otpRecord.is_expired = true;
-        //        await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "OTP expired." }, "Expired OTP."));
-        //    }
+            if (otpRecord.is_expired || DateTime.UtcNow > otpRecord.expiry_date)
+            {
+                otpRecord.is_expired = true;
+                await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "OTP expired." }, "Expired OTP."));
+            }
 
-        //    //  Compare OTP safely
-        //    if (!string.Equals(otpRecord.recovery_otp?.Trim(), dto.otp.Trim(), StringComparison.Ordinal))
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Invalid OTP." }, "Incorrect OTP."));
+            //  Compare OTP safely
+            if (!string.Equals(otpRecord.recovery_otp?.Trim(), dto.otp.Trim(), StringComparison.Ordinal))
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Invalid OTP." }, "Incorrect OTP."));
 
-        //    //  Mark OTP as verified and issue reset token
-        //    otpRecord.is_recovered = true;
-        //    otpRecord.execution_date = DateTime.UtcNow;
-        //    otpRecord.expiry_date = DateTime.UtcNow.AddMinutes(5);
+            //  Mark OTP as verified and issue reset token
+            otpRecord.is_recovered = true;
+            otpRecord.execution_date = DateTime.UtcNow;
+            otpRecord.expiry_date = DateTime.UtcNow.AddMinutes(5);
 
-        //    await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
+            await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
 
-        //    return Ok(ApiResponse<PassRecovery>.SuccessResponse(otpRecord, "OTP verified successfully. Use this token to reset your password."));
-        //}
+            return Ok(ApiResponse<PassRecovery>.SuccessResponse(otpRecord, "OTP verified successfully. Use this token to reset your password."));
 
-        ///// <summary>
-        ///// Resets the user's password using a verified otp.
-        ///// </summary>
-        ///// <param name="dto">
-        ///// Contains the verified OTP and new password credentials.
-        ///// </param>
-        ///// <returns>
-        ///// 200 OK if the password is reset successfully.  
-        ///// 400 Bad Request if input is invalid or the otp is expired.  
-        ///// 404 Not Found if the associated user cannot be found.
-        ///// </returns>
-        ///// <remarks>
-        ///// Final step of the password recovery process.  
-        ///// Requires a valid otp from <c>verify-otp</c>.  
-        ///// Token expires in 5 minutes and is invalidated after use.  
-        ///// Passwords are securely encrypted before storage.
-        ///// </remarks>
-        //[HttpPost("reset-password")]
-        //public async Task<IActionResult> ResetPassword([FromBody] DtoResetPassword dto)
-        //{
-        //    //  Input validation
-        //    if (string.IsNullOrWhiteSpace(dto.new_password) ||
-        //        string.IsNullOrWhiteSpace(dto.confirm_password))
-        //    {
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "All fields are required." }, "Invalid input."));
-        //    }
+        }
 
-        //    if (dto.new_password != dto.confirm_password)
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Passwords do not match." }, "Validation error."));
+        /// <summary>
+        /// Resets the user's password using a verified otp.
+        /// </summary>
+        /// <param name="dto">
+        /// Contains the verified OTP and new password credentials.
+        /// </param>
+        /// <returns>
+        /// 200 OK if the password is reset successfully.  
+        /// 400 Bad Request if input is invalid or the otp is expired.  
+        /// 404 Not Found if the associated user cannot be found.
+        /// </returns>
+        /// <remarks>
+        /// Final step of the password recovery process.  
+        /// Requires a valid otp from <c>verify-otp</c>.  
+        /// Token expires in 5 minutes and is invalidated after use.  
+        /// Passwords are securely encrypted before storage.
+        /// </remarks>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] DtoResetPassword dto)
+        {
+            //  Input validation
+            if (string.IsNullOrWhiteSpace(dto.new_password) ||
+                string.IsNullOrWhiteSpace(dto.confirm_password))
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "All fields are required." }, "Invalid input."));
+            }
 
-        //    //  Fetch recovery record
-        //    var recoveryRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
-        //    if (recoveryRecord == null)
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Invalid or expired token." }, "Invalid token."));
+            if (dto.new_password != dto.confirm_password)
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Passwords do not match." }, "Validation error."));
 
-        //    // Validate token expiry
-        //    if (recoveryRecord?.expiry_date == null || recoveryRecord.expiry_date < DateTime.UtcNow)
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Reset token expired." }, "Expired token."));
+            //  Fetch recovery record
+            var recoveryRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
+            if (recoveryRecord == null)
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Invalid or expired token." }, "Invalid token."));
 
-        //    //  Fetch user linked to the OTP record
-        //    var existingUser = await _userRepo.GetUserInfoByIdAsync(recoveryRecord.user_id);
-        //    if (existingUser == null)
-        //        return NotFound(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "User not found." }, "Invalid user."));
+            // Validate token expiry
+            if (recoveryRecord?.expiry_date == null || recoveryRecord.expiry_date < DateTime.UtcNow)
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Reset token expired." }, "Expired token."));
 
-        //    //  Build or update userInfo object
-        //    var updatedUser = new UserInf
-        //    {
-        //        user_id = existingUser.user_id,
-        //        user_name = existingUser.user_name,
-        //        user_email = existingUser.user_email,
-        //        is_active = existingUser.is_active,
-        //        created_date = existingUser.created_date,
-        //        password = EncryptionExtension.PasswordEnc(dto.new_password)
-        //    };
+            ////  Fetch user linked to the OTP record
+            //var existingUser = await _userRepo.GetUserInfoByIdAsync(recoveryRecord.user_id);
+            //if (existingUser == null)
+            //    return NotFound(ApiResponse<string>.FailureResponse(
+            //        new List<string> { "User not found." }, "Invalid user."));
 
-        //    //  Save the updated user info
-        //    await _userRepo.InsertOrUpdateUserInf(updatedUser, HelperEnums.Action.Update.ToString());
+            ////  Build or update userInfo object
+            //var updatedUser = new UserInf
+            //{
+            //    user_id = existingUser.user_id,
+            //    user_name = existingUser.user_name,
+            //    user_email = existingUser.user_email,
+            //    is_active = existingUser.is_active,
+            //    created_date = existingUser.created_date,
+            //    password = EncryptionExtension.PasswordEnc(dto.new_password)
+            //};
 
-        //    //  Invalidate OTP (mark as used)
-        //    recoveryRecord.is_expired = true;
-        //    recoveryRecord.expiry_date = DateTime.UtcNow;
-        //    await _passRecovery.InsertOrUpdatePassRecovery(recoveryRecord, HelperEnums.Action.Update.ToString());
+            ////  Save the updated user info
+            //await _userRepo.InsertOrUpdateUserInf(updatedUser, HelperEnums.Action.Update.ToString());
 
-        //    return Ok(ApiResponse<bool>.SuccessResponse(true, "Password has been reset successfully."));
-        //}
+            //  Invalidate OTP (mark as used)
+            recoveryRecord.is_expired = true;
+            recoveryRecord.expiry_date = DateTime.UtcNow;
+            await _passRecovery.InsertOrUpdatePassRecovery(recoveryRecord, HelperEnums.Action.Update.ToString());
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Password has been reset successfully."));
+        }
 
         ///// <summary>
         ///// Resends a new One-Time Password (OTP) to the user's registered email.

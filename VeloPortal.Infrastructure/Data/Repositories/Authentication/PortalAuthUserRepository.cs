@@ -78,7 +78,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         //    }
         //}
 
-        public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email, string user_role)
+        public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email)
         {
 
             try
@@ -88,7 +88,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                     return await Task.FromResult<DtoUserInf?>(null);
                 }
 
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_Portal_User_Info", user_type, user_or_email, user_role);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_Portal_User_Info", user_type, user_or_email);
 
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
