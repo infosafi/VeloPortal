@@ -59,25 +59,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-        //public async Task<DtoUserInf?> GetUserInfoByIdAsync(int user_id)
-        //{
-
-        //    try
-        //    {
-        //        using (var dbContext = _dbContextFactory.CreateDbContext())
-        //        {
-        //            var userinfo = await dbContext.UserInf.FirstOrDefaultAsync(p => p.user_id == user_id);
-        //            return _mapper.Map<DtoUserInf>(userinfo);
-        //        }
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ErrorTrackingExtension.SetError(ex);
-        //        return null;
-        //    }
-        //}
-
         public async Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email)
         {
 
@@ -104,6 +85,24 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<DtoUserInf?>(null);
+            }
+        }
+
+        public async Task<bool> UpdatePasswordAsync(string comcod, string user_type, string userId, string new_password, string portal_role)
+        {
+            try
+            {
+                if (_spProcessAccess == null) return false;
+
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20( comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_User_Password", user_type, userId, new_password, portal_role);
+
+                return ds != null;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
             }
         }
     }
