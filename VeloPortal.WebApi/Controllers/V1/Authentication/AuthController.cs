@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.DTOs.Common;
@@ -174,15 +175,37 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
             // Compose and send OTP email
-            var subject = "Your Password Reset OTP";
+            var subject = "Verification Code: Password Reset Request";
             var message = $@"
-                            <p>Hello {user.fullname},</p>
-                            <p>You requested to reset your password. Use the OTP below to proceed:</p>
-                            <h2>{otp}</h2>
-                            <p>This OTP is valid for 5 minutes.</p>
-                            <p>If you did not request this, please ignore this email.</p>
-                            <br />
-                            <p>Thank you,<br/>Support Team</p>";
+                            <div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;"">
+                                <div style=""background-color: #727cf5; padding: 20px; text-align: center; color: white;"">
+                                    <h1 style=""margin: 0; font-size: 24px;"">VeloPortal</h1>
+                                </div>
+                                <div style=""padding: 30px;"">
+                                    <p style=""font-size: 16px;"">Hello <strong>{user.fullname}</strong>,</p>
+                                    <p style=""font-size: 14px; color: #555;"">We received a request to reset the password for your VeloPortal account. Please use the following One-Time Password (OTP) to complete the process:</p>
+        
+                                    <div style=""text-align: center; margin: 30px 0;"">
+                                        <span style=""display: inline-block; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #727cf5; background-color: #f1f3fa; border-radius: 5px; border: 1px dashed #727cf5;"">
+                                            {otp}
+                                        </span>
+                                    </div>
+
+                                    <p style=""font-size: 13px; color: #888; text-align: center;"">This code is valid for <strong>5 minutes</strong>. For your security, do not share this code with anyone.</p>
+        
+                                    <hr style=""border: 0; border-top: 1px solid #eee; margin: 30px 0;"" />
+        
+                                    <p style=""font-size: 14px; color: #555;"">If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+        
+                                    <p style=""font-size: 14px; margin-top: 25px;"">
+                                        Regards,<br/>
+                                        <strong>VeloPortal Support Team</strong>
+                                    </p>
+                                </div>
+                                <div style=""background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #999;"">
+                                    &copy; {DateTime.Now.Year} VeloPortal. All rights reserved.
+                                </div>
+                            </div>";
 
             await EmailHelper.SendEmail(user.user_email, subject, message);
 
@@ -313,100 +336,120 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Password has been reset successfully."));
         }
 
-        ///// <summary>
-        ///// Resends a new One-Time Password (OTP) to the user's registered email.
-        ///// </summary>
-        ///// <param name="dto">
-        ///// Contains the user's email or username to resend the OTP.
-        ///// </param>
-        ///// <returns>
-        ///// 200 OK if the OTP was successfully resent.  
-        ///// 400 Bad Request for invalid input or inactive user.  
-        ///// 404 Not Found if the user does not exist.
-        ///// </returns>
-        ///// <remarks>
-        ///// This endpoint regenerates a new 6-digit OTP and sends it to the user's registered email.  
-        ///// It replaces any previous OTP and is valid for a limited time (e.g., 5 minutes).  
-        ///// Can be used before calling the <c>verify-otp</c> endpoint.
-        ///// </remarks>
-        //[HttpPost("resend-otp")]
-        //[AllowAnonymous]
-        //public async Task<IActionResult> ResendOtp([FromBody] DtoResendOtp dto)
-        //{
-        //    //  Validate input
-        //    if (string.IsNullOrWhiteSpace(dto.email_username))
-        //        return BadRequest(ApiResponse<string>.FailureResponse(
-        //            new List<string> { "Email is required." }, "Invalid input."));
+        /// <summary>
+        /// Resends a new One-Time Password (OTP) to the user's registered email.
+        /// </summary>
+        /// <param name="dto">
+        /// Contains the user's email or username to resend the OTP.
+        /// </param>
+        /// <returns>
+        /// 200 OK if the OTP was successfully resent.  
+        /// 400 Bad Request for invalid input or inactive user.  
+        /// 404 Not Found if the user does not exist.
+        /// </returns>
+        /// <remarks>
+        /// This endpoint regenerates a new 6-digit OTP and sends it to the user's registered email.  
+        /// It replaces any previous OTP and is valid for a limited time (e.g., 5 minutes).  
+        /// Can be used before calling the <c>verify-otp</c> endpoint.
+        /// </remarks>
+        [HttpPost("resend-otp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendOtp([FromBody] DtoResendOtp dto)
+        {
+            //  Validate input
+            if (string.IsNullOrWhiteSpace(dto.user_or_email))
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Email is required." }, "Invalid input."));
 
-        //    try
-        //    {
-        //        //  Find user by email
-        //        var user = await _userRepo.FindUserByEmailOrUsernameAsync(dto.email_username);
-        //        if (user == null)
-        //            return NotFound(ApiResponse<string>.FailureResponse(
-        //                new List<string> { "User not found." }, "Invalid email."));
+            try
+            {
+                //  Find user by email
+                var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email);
+                if (user == null)
+                    return NotFound(ApiResponse<string>.FailureResponse(
+                        new List<string> { "User not found." }, "Invalid email."));
 
-        //        if (!user.is_active)
-        //            return BadRequest(ApiResponse<string>.FailureResponse(
-        //                new List<string> { "User account is inactive." }, "Inactive user."));
+                //  Generate new OTP
+                var otp = new Random().Next(100000, 999999).ToString();
+                var createdDate = DateTime.UtcNow;
+                var expiryDate = createdDate.AddMinutes(5);
 
-        //        //  Generate new OTP
-        //        var otp = new Random().Next(100000, 999999).ToString();
-        //        var createdDate = DateTime.UtcNow;
-        //        var expiryDate = createdDate.AddMinutes(5);
 
-        //        // Get client IP and user-agent
-        //        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                // Get client IP and user-agent
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-        //        //  Create or update OTP record
-        //        var passRecovery = new PassRecovery
-        //        {
-        //            user_id = user.user_id,
-        //            user_email = user.user_email,
-        //            recovery_otp = otp,
-        //            created_date = createdDate,
-        //            expiry_date = expiryDate,
-        //            execution_date = DateTime.Parse("1900-01-01"),
-        //            request_agent = dto.user_agent,
-        //            ip_address = ipAddress,
-        //            is_recovered = false,
-        //            is_expired = false
-        //        };
 
-        //        var saveResponse = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
-        //        if (!saveResponse)
-        //        {
-        //            return BadRequest(ApiResponse<string>.FailureResponse(
-        //                new List<string> { "Failed to store OTP information." }, "Database operation failed."));
-        //        }
+                // Build PassRecovery entity
+                var passRecovery = new PassRecovery
+                {
+                    user_id = user.unq_id,
+                    user_email = user.user_email,
+                    recovery_otp = otp,
+                    created_date = createdDate,
+                    expiry_date = expiryDate,
+                    execution_date = DateTime.Parse("1900-01-01"),
+                    request_agent = dto.user_agent,
+                    ip_address = ipAddress,
+                    is_recovered = false,
+                    is_expired = false,
+                    portal_role = !string.IsNullOrEmpty(user.user_role) ? user.user_role : "51"
+                };
 
-        //        //  Prepare email message
-        //        var subject = "Password Recovery OTP (Resend)";
-        //        var message = $@"
-        //                    <p>Dear {user.user_name},</p>
-        //                    <p>Your new one-time password (OTP) for password recovery is:</p>
-        //                    <h2>{otp}</h2>
-        //                    <p>This OTP will expire in 5 minutes.</p>
-        //                    <p>If you didn’t request this, please ignore this email.</p>
-        //                    <br/>
-        //                    <p>— The Velocity Security Team</p>";
 
-        //        //  Send email
-        //        await EmailHelper.SendEmail(user.user_email, subject, message);
+                var saveResponse = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
+                if (!saveResponse)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(
+                        new List<string> { "Failed to store OTP information." }, "Database operation failed."));
+                }
 
-        //        //  Return success response
-        //        return Ok(ApiResponse<string>.SuccessResponse(
-        //            "A new OTP has been sent to your registered email.",
-        //            "OTP resent successfully."));
-        //    }
-        //    catch (Exception ex)
-        //    {
+                //  Prepare email message
+                var subject = "Verification Code: Password Reset Request";
+                var message = $@"
+                            <div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;"">
+                                <div style=""background-color: #727cf5; padding: 20px; text-align: center; color: white;"">
+                                    <h1 style=""margin: 0; font-size: 24px;"">VeloPortal</h1>
+                                </div>
+                                <div style=""padding: 30px;"">
+                                    <p style=""font-size: 16px;"">Hello <strong>{user.fullname}</strong>,</p>
+                                    <p style=""font-size: 14px; color: #555;"">We received a request to reset the password for your VeloPortal account. Please use the following One-Time Password (OTP) to complete the process:</p>
+        
+                                    <div style=""text-align: center; margin: 30px 0;"">
+                                        <span style=""display: inline-block; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #727cf5; background-color: #f1f3fa; border-radius: 5px; border: 1px dashed #727cf5;"">
+                                            {otp}
+                                        </span>
+                                    </div>
 
-        //        return StatusCode(StatusCodes.Status500InternalServerError,
-        //            ApiResponse<string>.FailureResponse(
-        //                new List<string> { "An unexpected error occurred while resending OTP." },
-        //                ErrorTrackingExtension.ErrorMsg ?? ex.Message));
-        //    }
-        //}
+                                    <p style=""font-size: 13px; color: #888; text-align: center;"">This code is valid for <strong>5 minutes</strong>. For your security, do not share this code with anyone.</p>
+        
+                                    <hr style=""border: 0; border-top: 1px solid #eee; margin: 30px 0;"" />
+        
+                                    <p style=""font-size: 14px; color: #555;"">If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+        
+                                    <p style=""font-size: 14px; margin-top: 25px;"">
+                                        Regards,<br/>
+                                        <strong>VeloPortal Support Team</strong>
+                                    </p>
+                                </div>
+                                <div style=""background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #999;"">
+                                    &copy; {DateTime.Now.Year} VeloPortal. All rights reserved.
+                                </div>
+                            </div>";
+
+                //  Send email
+                await EmailHelper.SendEmail(user.user_email, subject, message);
+
+
+                return Ok(ApiResponse<string>.SuccessResponse("A new OTP has been sent to your registered email.", "OTP resent successfully."));
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(
+                        new List<string> { "An unexpected error occurred while resending OTP." },
+                        ErrorTrackingExtension.ErrorMsg ?? ex.Message));
+            }
+        }
     }
 }
