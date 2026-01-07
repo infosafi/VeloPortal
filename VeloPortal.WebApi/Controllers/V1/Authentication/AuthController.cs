@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.DTOs.Common;
@@ -165,7 +164,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 ip_address = ipAddress,
                 is_recovered = false,
                 is_expired = false,
-                portal_role = "51"
+                portal_role = !string.IsNullOrEmpty(user.user_role) ? user.user_role : "51"
             };
 
             // Save to DB
@@ -288,27 +287,25 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 return BadRequest(ApiResponse<string>.FailureResponse(
                     new List<string> { "Reset token expired." }, "Expired token."));
 
-            ////  Fetch user linked to the OTP record
-            //var existingUser = await _userRepo.GetUserInfoByIdAsync(recoveryRecord.user_id);
-            //if (existingUser == null)
-            //    return NotFound(ApiResponse<string>.FailureResponse(
-            //        new List<string> { "User not found." }, "Invalid user."));
+            //  Fetch user linked to the OTP record
+            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync("11001", "Customer", recoveryRecord.user_email);
+            if (existingUser == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "User not found." }, "Invalid user."));
 
-            ////  Build or update userInfo object
-            //var updatedUser = new UserInf
-            //{
-            //    user_id = existingUser.user_id,
-            //    user_name = existingUser.user_name,
-            //    user_email = existingUser.user_email,
-            //    is_active = existingUser.is_active,
-            //    created_date = existingUser.created_date,
-            //    password = EncryptionExtension.PasswordEnc(dto.new_password)
-            //};
+            string encryptedPassword = EncryptionExtension.PasswordEnc(dto.new_password);
 
-            ////  Save the updated user info
-            //await _userRepo.InsertOrUpdateUserInf(updatedUser, HelperEnums.Action.Update.ToString());
+            string userRole = existingUser.user_role ?? "";
+            string userPrefix = userRole.StartsWith("15") ? "15" : "51";
 
-            //  Invalidate OTP (mark as used)
+            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync( "11001", "Customer", existingUser.unq_id.ToString(), encryptedPassword, userPrefix );
+
+            if (!isUpdateSuccess)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                   new List<string> { "Failed to update password in database." }, "Database Error."));
+            }
+
             recoveryRecord.is_expired = true;
             recoveryRecord.expiry_date = DateTime.UtcNow;
             await _passRecovery.InsertOrUpdatePassRecovery(recoveryRecord, HelperEnums.Action.Update.ToString());
