@@ -16,7 +16,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
-
+        public DbSet<VendorProfile> VendorProfile { get; set; }
         #endregion
 
         #region Common       

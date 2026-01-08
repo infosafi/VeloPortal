@@ -84,6 +84,67 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         }
 
 
+        /// <summary>
+        /// Registers a new vendor into the portal.
+        /// </summary>
+        [HttpPost("portal-signup")]
+        public async Task<IActionResult> Signup(DtoPortalSignup dto)
+        {
+            // 1. Basic Validation
+            if (string.IsNullOrWhiteSpace(dto.comcod))
+                return BadRequest(new { Success = false, message = "Company Code is missing!" });
+
+            if (string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.password))
+                return BadRequest(new { Success = false, message = "Email and Password are required!" });
+
+            if (dto.password.Length < 6)
+                return BadRequest(new { Success = false, message = "Password must be at least 6 characters." });
+
+
+            if (string.IsNullOrWhiteSpace(dto.company_name))
+                return BadRequest(new { Success = false, message = "Company Name is required!" });
+
+            try
+            {
+                // 2. Check if user already exists
+                var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
+                if (existingUser != null && existingUser.unq_id != 0)
+                {
+                    return BadRequest(new { Success = false, message = "User with this email already exists." });
+                }
+
+                var newVendor = new VendorProfile
+                {
+                    comcod = dto.comcod,
+                    company_name = dto.company_name ?? "Shaha Cement",
+                    vendor_email = dto.email,
+                    contact_no = dto.phone,
+                    vendor_password = EncryptionExtension.PasswordEnc(dto.password), 
+                    created_date = DateTime.Now,
+                    is_available = true,
+                    is_verify_acc = false,
+                    is_approved = false,
+                    is_hold = false,
+                    is_audit = true
+                };
+
+                int result = await _userRepo.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+
+                if (result > 0)
+                {
+                    return Ok(new { Success = true, message = "Registration successful! Please wait for account verification." });
+                }
+
+                return BadRequest(new { Success = false, message = "Registration failed at the database level." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Success = false, message = "An error occurred during signup.", detail = ex.Message });
+            }
+        }
+
+
         //[HttpPost("refresh")]
         //public async Task<IActionResult> Refresh(DtoJwtToken dto)
         //{
