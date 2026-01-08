@@ -451,5 +451,49 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                         ErrorTrackingExtension.ErrorMsg ?? ex.Message));
             }
         }
+
+
+        /// <summary>
+        /// For Change Password of User 
+        /// </summary>
+        /// <param name="dto">User Info</param>         
+        /// <returns>Pasword update</returns>
+        [HttpPost("Change-Password")]
+        [Authorize]
+        public async Task<IActionResult> UserChangePassword(DtoUserChangePassword dto)
+        {
+            if (dto.comcod?.Length == 0)
+            {
+
+                return BadRequest(new { Success = false, message = "Company Selection is missing!" });
+
+            }
+            if (dto.new_password?.Length == 0)
+            {
+                return BadRequest(new { Success = false, message = "New Password Mandatory!" });
+
+            }
+
+            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync("11001", "Customer", dto.user_email);
+
+            if (existingUser == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "User not found." }, "Invalid user."));
+
+            string encryptedPassword = EncryptionExtension.PasswordEnc(dto.new_password);
+
+            string userRole = existingUser.user_role ?? "";
+            string userPrefix = userRole.StartsWith("15") ? "15" : "51";
+
+            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync("11001", "Customer", existingUser.unq_id.ToString(), encryptedPassword, userPrefix);
+
+            if (!isUpdateSuccess)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                   new List<string> { "Failed to update password in database." }, "Database Error."));
+            }
+
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Password Updated Successfully."));
+        }
     }
 }
