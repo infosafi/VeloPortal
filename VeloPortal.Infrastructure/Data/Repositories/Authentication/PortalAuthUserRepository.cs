@@ -4,6 +4,8 @@ using System.Data;
 using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.SPHelper;
@@ -103,6 +105,60 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             {
                 ErrorTrackingExtension.SetError(ex);
                 return false;
+            }
+        }
+
+
+        public async Task<int> InsertOrUpdateVendor(VendorProfile obj, string action)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    if (action == HelperEnums.Action.Add.ToString())
+                    {
+       
+                        obj.experience ??= 0;     
+                        obj.business_type ??= 0; 
+                        obj.num_of_client ??= 0;   
+                        obj.ong_num_of_client ??= 0; 
+
+                        obj.company_bin ??= "";
+                        obj.compan_overview ??= "";
+                        obj.acc_name ??= "";
+                        obj.acc_number ??= "";
+                        obj.address ??= "";
+                        obj.bankcode ??= "";
+                        obj.branch ??= "";
+                        obj.routeno ??= "";
+                        obj.designation ??= "";
+                        obj.contact_person ??= "";
+                        obj.secondary_contact_no ??= "";
+                        obj.owner_name ??= "";
+                        obj.owner_id_no ??= "";
+                        obj.owner_tin_no ??= "";
+                        obj.rescode ??= "";
+                        obj.license_no ??= "";
+                        obj.terms_condition ??= "";
+                        obj.payment_mode ??= "";
+                        obj.links ??= "";
+                        obj.user_photo ??= "";
+
+                        await dbContext.VendorProfile.AddAsync(obj);
+                    }
+                    else
+                    {
+                        dbContext.VendorProfile.Update(obj);
+                    }
+
+                    await dbContext.SaveChangesAsync();
+                    return obj.vendor_profile_id;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return 0;
             }
         }
     }
