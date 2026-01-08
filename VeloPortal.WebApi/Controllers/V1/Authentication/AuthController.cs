@@ -175,37 +175,61 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
             // Compose and send OTP email
-            var subject = "Verification Code: Password Reset Request";
-            var message = $@"
-                            <div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;"">
-                                <div style=""background-color: #727cf5; padding: 20px; text-align: center; color: white;"">
-                                    <h1 style=""margin: 0; font-size: 24px;"">VeloPortal</h1>
-                                </div>
-                                <div style=""padding: 30px;"">
-                                    <p style=""font-size: 16px;"">Hello <strong>{user.fullname}</strong>,</p>
-                                    <p style=""font-size: 14px; color: #555;"">We received a request to reset the password for your VeloPortal account. Please use the following One-Time Password (OTP) to complete the process:</p>
-        
-                                    <div style=""text-align: center; margin: 30px 0;"">
-                                        <span style=""display: inline-block; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #727cf5; background-color: #f1f3fa; border-radius: 5px; border: 1px dashed #727cf5;"">
-                                            {otp}
-                                        </span>
-                                    </div>
+            var subject = "Your VeloPortal Verification Code";
 
-                                    <p style=""font-size: 13px; color: #888; text-align: center;"">This code is valid for <strong>5 minutes</strong>. For your security, do not share this code with anyone.</p>
+            var message = $@"
+                    <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
+                        <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
+                            <tr>
+                                <td class=""bg-primary"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
+                                    <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
+                                </td>
+                            </tr>
         
-                                    <hr style=""border: 0; border-top: 1px solid #eee; margin: 30px 0;"" />
-        
-                                    <p style=""font-size: 14px; color: #555;"">If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
-        
-                                    <p style=""font-size: 14px; margin-top: 25px;"">
-                                        Regards,<br/>
+                            <tr>
+                                <td style=""padding: 40px 30px;"">
+                                    <h2 style=""margin: 0 0 20px 0; font-size: 20px; color: #313a46;"">Forgot your password?</h2>
+                                    <p style=""margin: 0 0 25px 0; font-size: 16px; color: #6c757d; line-height: 1.6;"">
+                                        Hello <strong>{user.fullname}</strong>,<br><br>
+                                        We received a request to reset your password. Use the verification code below to proceed. <strong>This code is valid for 5 minutes.</strong>
+                                    </p>
+
+                                    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+                                        <tr>
+                                            <td align=""center"" style=""background-color: #f1f3fa; border: 1px dashed #727cf5; border-radius: 8px; padding: 25px;"">
+                                                <span style=""font-size: 12px; color: #727cf5; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; display: block; margin-bottom: 10px;"">
+                                                    Your Verification Code
+                                                </span>
+                                                <div style=""font-size: 42px; font-weight: 800; color: #313a46; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;"">
+                                                    {otp}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <p style=""margin: 25px 0 0 0; font-size: 14px; color: #98a6ad; text-align: center;"">
+                                        If you did not request this, you can safely ignore this email. No changes will be made to your account.
+                                    </p>
+                
+                                    <hr style=""border: 0; border-top: 1px solid #eef2f7; margin: 30px 0;"">
+
+                                    <p style=""font-size: 14px; color: #313a46; margin: 0;"">
+                                        Best regards,<br>
                                         <strong>VeloPortal Support Team</strong>
                                     </p>
-                                </div>
-                                <div style=""background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #999;"">
-                                    &copy; {DateTime.Now.Year} VeloPortal. All rights reserved.
-                                </div>
-                            </div>";
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style=""padding: 20px; background-color: #f9f9f9; text-align: center; border-top: 1px solid #eef2f7;"">
+                                    <p style=""font-size: 12px; color: #98a6ad; margin: 0;"">
+                                        &copy; {DateTime.Now.Year} VeloPortal. All rights reserved. <br>
+                                        This is an automated security message. Please do not reply.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>";
 
             await EmailHelper.SendEmail(user.user_email, subject, message);
 
@@ -404,37 +428,60 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 }
 
                 //  Prepare email message
-                var subject = "Verification Code: Password Reset Request";
+                var subject = "Password Reset Request";
                 var message = $@"
-                            <div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;"">
-                                <div style=""background-color: #727cf5; padding: 20px; text-align: center; color: white;"">
-                                    <h1 style=""margin: 0; font-size: 24px;"">VeloPortal</h1>
-                                </div>
-                                <div style=""padding: 30px;"">
-                                    <p style=""font-size: 16px;"">Hello <strong>{user.fullname}</strong>,</p>
-                                    <p style=""font-size: 14px; color: #555;"">We received a request to reset the password for your VeloPortal account. Please use the following One-Time Password (OTP) to complete the process:</p>
+                    <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
+                        <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
+                            <tr>
+                                <td class=""bg-primary"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
+                                    <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
+                                </td>
+                            </tr>
         
-                                    <div style=""text-align: center; margin: 30px 0;"">
-                                        <span style=""display: inline-block; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #727cf5; background-color: #f1f3fa; border-radius: 5px; border: 1px dashed #727cf5;"">
-                                            {otp}
-                                        </span>
-                                    </div>
+                            <tr>
+                                <td style=""padding: 40px 30px;"">
+                                    <h2 style=""margin: 0 0 20px 0; font-size: 20px; color: #313a46;"">Verify your identity</h2>
+                                    <p style=""margin: 0 0 25px 0; font-size: 16px; color: #6c757d; line-height: 1.6;"">
+                                        Hello <strong>{user.fullname}</strong>,<br><br>
+                                        We received a request to reset your password. Use the verification code below to proceed. <strong>This code is valid for 5 minutes.</strong>
+                                    </p>
 
-                                    <p style=""font-size: 13px; color: #888; text-align: center;"">This code is valid for <strong>5 minutes</strong>. For your security, do not share this code with anyone.</p>
-        
-                                    <hr style=""border: 0; border-top: 1px solid #eee; margin: 30px 0;"" />
-        
-                                    <p style=""font-size: 14px; color: #555;"">If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
-        
-                                    <p style=""font-size: 14px; margin-top: 25px;"">
-                                        Regards,<br/>
+                                    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
+                                        <tr>
+                                            <td align=""center"" style=""background-color: #f1f3fa; border: 1px dashed #727cf5; border-radius: 8px; padding: 25px;"">
+                                                <span style=""font-size: 12px; color: #727cf5; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; display: block; margin-bottom: 10px;"">
+                                                    Your Verification Code
+                                                </span>
+                                                <div style=""font-size: 42px; font-weight: 800; color: #313a46; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;"">
+                                                    {otp}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <p style=""margin: 25px 0 0 0; font-size: 14px; color: #98a6ad; text-align: center;"">
+                                        If you did not request this, you can safely ignore this email. No changes will be made to your account.
+                                    </p>
+                
+                                    <hr style=""border: 0; border-top: 1px solid #eef2f7; margin: 30px 0;"">
+
+                                    <p style=""font-size: 14px; color: #313a46; margin: 0;"">
+                                        Best regards,<br>
                                         <strong>VeloPortal Support Team</strong>
                                     </p>
-                                </div>
-                                <div style=""background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #999;"">
-                                    &copy; {DateTime.Now.Year} VeloPortal. All rights reserved.
-                                </div>
-                            </div>";
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style=""padding: 20px; background-color: #f9f9f9; text-align: center; border-top: 1px solid #eef2f7;"">
+                                    <p style=""font-size: 12px; color: #98a6ad; margin: 0;"">
+                                        &copy; {DateTime.Now.Year} VeloPortal. All rights reserved. <br>
+                                        This is an automated security message. Please do not reply.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>";
 
                 //  Send email
                 await EmailHelper.SendEmail(user.user_email, subject, message);
@@ -474,7 +521,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             }
 
-            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync("11001", "Customer", dto.user_email);
+            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, "Customer", dto.user_email);
 
             if (existingUser == null)
                 return NotFound(ApiResponse<string>.FailureResponse(
