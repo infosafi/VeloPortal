@@ -90,6 +90,35 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
+        public async Task<VendorProfile?> FindUserByEmailAsync(string comcod, string user_type, string user_or_email)
+        {
+
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<VendorProfile?>(null);
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_VendorProfile", user_type, user_or_email);
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<VendorProfile?>(null);
+                }
+
+                var userList = ds.Tables[0].DataTableToList<VendorProfile>();
+                var user = userList?.FirstOrDefault();
+
+                return await Task.FromResult(user);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<VendorProfile?>(null);
+            }
+        }
+
         public async Task<bool> UpdatePasswordAsync(string comcod, string user_type, string userId, string new_password, string portal_role)
         {
             try

@@ -28,8 +28,7 @@ namespace VeloPortal.Domain.Entities.Authentication
         public string? contact_person { get; set; }
         public string? secondary_contact_no { get; set; }
         public string? designation { get; set; }
-        [Required]
-        public string vendor_password { get; set; }
+        public string? vendor_password { get; set; }
         public bool is_available { get; set; } = true;
         public bool is_verify_acc { get; set; } = false;
         public bool is_email_verify { get; set; } = false;
@@ -45,7 +44,7 @@ namespace VeloPortal.Domain.Entities.Authentication
         public string? acc_name { get; set; }
         public string? acc_number { get; set; }
         public string? routeno { get; set; }
-        public string? links { get; set; }
+        public string? links { get; set; } = string.Empty;
         public DateTime created_date { get; set; } = DateTime.Now;
         public string? rescode { get; set; }
         public bool? is_audit { get; set; }
