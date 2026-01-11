@@ -144,6 +144,40 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             }
         }
 
+        /// <summary>
+        /// Retrieves the full profile of a vendor by email.
+        /// </summary>
+        [HttpGet("get-vendor-profile")]
+        [Authorize]
+        public async Task<IActionResult> GetProfile(string comcod, string email)
+        {
+            var user = await _userRepo.FindUserByEmailAsync(comcod, "Vendor", email);
+            if (user == null)
+                return NotFound(new { Success = false, message = "Profile not found." });
+
+            return Ok(new { Success = true, data = user });
+        }
+
+        /// <summary>
+        /// Updates the vendor profile details.
+        /// </summary>
+        [HttpPost("update-vendor-profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile(VendorProfile dto)
+        {
+            if (dto == null || dto.vendor_profile_id == 0)
+                return BadRequest(new { Success = false, message = "Invalid profile data." });
+
+            long resultId = await _userRepo.InsertOrUpdateVendor(dto, "Update");
+
+            if (resultId > 0)
+            {
+                return Ok(new { Success = true, message = "Profile updated successfully!", id = resultId });
+            }
+
+            return StatusCode(500, new { Success = false, message = "Failed to update profile." });
+        }
+
 
         //[HttpPost("refresh")]
         //public async Task<IActionResult> Refresh(DtoJwtToken dto)
