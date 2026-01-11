@@ -109,7 +109,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         }
 
 
-        public async Task<int> InsertOrUpdateVendor(VendorProfile obj, string action)
+        public async Task<long> InsertOrUpdateVendor(VendorProfile obj, string action)
         {
             try
             {
@@ -117,7 +117,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 {
                     if (action == HelperEnums.Action.Add.ToString())
                     {
-       
+                        obj.vendorid ??= "";
                         obj.experience ??= 0;     
                         obj.business_type ??= 0; 
                         obj.num_of_client ??= 0;   
