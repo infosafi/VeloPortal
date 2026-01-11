@@ -54,12 +54,13 @@ namespace VeloPortal.Infrastructure.Service
         {
             var request = CreateRequest(fileUrl, WebRequestMethods.Ftp.DownloadFile);
 
-            using var response = (FtpWebResponse)await request.GetResponseAsync();
-            using var stream = response.GetResponseStream();
-            using var ms = new MemoryStream();
-
-            await stream.CopyToAsync(ms);
-            return Convert.ToBase64String(ms.ToArray());
+            using (var response = (FtpWebResponse)await request.GetResponseAsync())
+            using (var stream = response.GetResponseStream())
+            using (var ms = new MemoryStream())
+            {
+                await stream.CopyToAsync(ms);
+                return Convert.ToBase64String(ms.GetBuffer(), 0, (int)ms.Length);
+            }
         }
 
         // ================= DELETE =================

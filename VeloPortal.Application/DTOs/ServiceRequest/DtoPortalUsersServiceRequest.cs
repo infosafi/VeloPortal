@@ -10,6 +10,8 @@ namespace VeloPortal.Application.DTOs.ServiceRequest
     {
         public string? comcod { get; set; }
         public string service_no { get; set; } = String.Empty;
+        public string unitcode { get; set; } = String.Empty;
+        public string unitname { get; set; } = String.Empty;
         public long service_req_id { get; set; }
         public DateTime service_req_date { get; set; }
         public string complain_details { get; set; } = String.Empty;

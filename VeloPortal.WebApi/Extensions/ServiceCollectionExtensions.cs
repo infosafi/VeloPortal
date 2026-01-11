@@ -84,6 +84,7 @@ namespace VeloPortal.WebApi.Extensions
 
             #region start Authentication Service add
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
+            services.AddScoped<IPassRecovery, PassRecoveryRepository>();
             #endregion
 
             #region Documentation Service add
