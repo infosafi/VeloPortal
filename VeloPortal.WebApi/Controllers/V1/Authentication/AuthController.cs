@@ -168,7 +168,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             if (dto == null || dto.vendor_profile_id == 0)
                 return BadRequest(new { Success = false, message = "Invalid profile data." });
 
-            long resultId = await _userRepo.InsertOrUpdateVendor(dto, "Update");
+            long resultId = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
 
             if (resultId > 0)
             {
