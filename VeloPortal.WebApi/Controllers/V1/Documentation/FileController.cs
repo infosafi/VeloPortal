@@ -25,6 +25,13 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
             return Ok(new { url });
         }
 
+        [HttpGet("check-connection")]
+        public async Task<IActionResult> CheckConnection()
+        {
+            var result = await _ftpService.CheckConnectionWithMessageAsync();
+            return Ok(result);
+        }
+
         [HttpGet("download")]
         public async Task<IActionResult> Download(string fileUrl)
         {

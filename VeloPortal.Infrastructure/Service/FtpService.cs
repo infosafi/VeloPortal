@@ -7,11 +7,18 @@ using VeloPortal.Application.Settings;
 namespace VeloPortal.Infrastructure.Service
 {
 
+    public class FtpConnectionResult
+    {
+        public bool IsValid { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
     public interface IFtpService
     {
         Task<string> UploadAsync(IFormFile file, string path = "");
         Task<string> DownloadAsBase64Async(string fileUrl);
         Task<bool> DeleteAsync(string fileUrl);
+        Task<FtpConnectionResult> CheckConnectionWithMessageAsync();
     }
 
     public class FtpService : IFtpService
@@ -69,6 +76,43 @@ namespace VeloPortal.Infrastructure.Service
             var request = CreateRequest(fileUrl, WebRequestMethods.Ftp.DeleteFile);
             using var response = (FtpWebResponse)await request.GetResponseAsync();
             return response.StatusCode == FtpStatusCode.FileActionOK;
+        }
+
+        public async Task<FtpConnectionResult> CheckConnectionWithMessageAsync()
+        {
+            try
+            {
+                string directoryUrl = $"{_ftp.host}/{_ftp.root}".TrimEnd('/');
+
+                var request = CreateRequest(directoryUrl, WebRequestMethods.Ftp.PrintWorkingDirectory);
+                request.Timeout = 1000;
+                request.ReadWriteTimeout = 1000;
+                request.KeepAlive = false;
+
+                using var response = (FtpWebResponse)await request.GetResponseAsync();
+
+                return new FtpConnectionResult
+                {
+                    IsValid = true,
+                    Message = "FTP connection successful."
+                };
+            }
+            catch (WebException ex) when (ex.Response is FtpWebResponse ftpResponse)
+            {
+                return new FtpConnectionResult
+                {
+                    IsValid = false,
+                    Message = $"FTP connection failed: {ftpResponse.StatusDescription}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new FtpConnectionResult
+                {
+                    IsValid = false,
+                    Message = $"Unexpected error: {ex.Message}"
+                };
+            }
         }
 
         // ================= HELPERS =================
