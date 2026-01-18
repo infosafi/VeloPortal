@@ -149,9 +149,9 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// </summary>
         [HttpGet("get-vendor-profile")]
         [Authorize]
-        public async Task<IActionResult> GetProfile(string comcod, string email)
+        public async Task<IActionResult> GetProfile(string comcod, string vendor_email)
         {
-            var user = await _userRepo.FindUserByEmailAsync(comcod, "Vendor", email);
+            var user = await _userRepo.FindUserByEmailAsync(comcod, "Vendor", vendor_email);
             if (user == null)
                 return NotFound(new { Success = false, message = "Profile not found." });
 

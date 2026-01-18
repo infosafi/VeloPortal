@@ -19,9 +19,8 @@ namespace VeloPortal.Domain.Entities.Authentication
         public string? company_bin { get; set; }
         [StringLength(20)]
         public string? contact_no { get; set; }
-        [Required]
         [EmailAddress]
-        public string vendor_email { get; set; }
+        public string? vendor_email { get; set; }
         public string? license_no { get; set; }
         public int? num_of_client { get; set; }
         public int? ong_num_of_client { get; set; }
@@ -29,9 +28,9 @@ namespace VeloPortal.Domain.Entities.Authentication
         public string? secondary_contact_no { get; set; }
         public string? designation { get; set; }
         public string? vendor_password { get; set; }
-        public bool is_available { get; set; } = true;
-        public bool is_verify_acc { get; set; } = false;
-        public bool is_email_verify { get; set; } = false;
+        public bool? is_available { get; set; } = true;
+        public bool? is_verify_acc { get; set; } = false;
+        public bool? is_email_verify { get; set; } = false;
         public decimal? experience { get; set; }
         public string? terms_condition { get; set; }
         public int? business_type { get; set; }
@@ -45,11 +44,11 @@ namespace VeloPortal.Domain.Entities.Authentication
         public string? acc_number { get; set; }
         public string? routeno { get; set; }
         public string? links { get; set; } = string.Empty;
-        public DateTime created_date { get; set; } = DateTime.Now;
+        public DateTime? created_date { get; set; } = DateTime.Now;
         public string? rescode { get; set; }
-        public bool? is_audit { get; set; }
+        public bool is_audit { get; set; }
         public string? user_photo { get; set; }
-        public bool is_hold { get; set; } = false;
-        public bool is_approved { get; set; } = false;
+        public bool? is_hold { get; set; } = false;
+        public bool? is_approved { get; set; } = false;
     }
 }
