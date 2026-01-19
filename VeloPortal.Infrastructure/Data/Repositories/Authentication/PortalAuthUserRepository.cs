@@ -147,11 +147,10 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                     if (action == HelperEnums.Action.Add.ToString())
                     {
                         obj.vendorid ??= "";
-                        obj.experience ??= 0;     
-                        obj.business_type ??= 0; 
-                        obj.num_of_client ??= 0;   
-                        obj.ong_num_of_client ??= 0; 
-
+                        obj.experience ??= 0;
+                        obj.business_type ??= 0;
+                        obj.num_of_client ??= 0;
+                        obj.ong_num_of_client ??= 0;
                         obj.company_bin ??= "";
                         obj.compan_overview ??= "";
                         obj.acc_name ??= "";
@@ -175,9 +174,55 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
 
                         await dbContext.VendorProfile.AddAsync(obj);
                     }
-                    else
+                    else 
                     {
-                        dbContext.VendorProfile.Update(obj);
+
+                        var existingVendor = await dbContext.VendorProfile
+                            .FirstOrDefaultAsync(v => v.vendor_profile_id == obj.vendor_profile_id);
+
+                        if (existingVendor == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"ERROR: Vendor with ID {obj.vendor_profile_id} not found");
+                            return 0;
+                        }
+
+                        // Update properties
+                        existingVendor.comcod = obj.comcod;
+                        existingVendor.vendorid = obj.vendorid;
+                        existingVendor.company_name = obj.company_name;
+                        existingVendor.address = obj.address;
+                        existingVendor.compan_overview = obj.compan_overview;
+                        existingVendor.company_bin = obj.company_bin;
+                        existingVendor.contact_no = obj.contact_no;
+                        existingVendor.vendor_email = obj.vendor_email;
+                        existingVendor.license_no = obj.license_no;
+                        existingVendor.num_of_client = obj.num_of_client;
+                        existingVendor.ong_num_of_client = obj.ong_num_of_client;
+                        existingVendor.contact_person = obj.contact_person;
+                        existingVendor.secondary_contact_no = obj.secondary_contact_no;
+                        existingVendor.designation = obj.designation;
+                        existingVendor.is_available = obj.is_available;
+                        existingVendor.is_verify_acc = obj.is_verify_acc;
+                        existingVendor.is_email_verify = obj.is_email_verify;
+                        existingVendor.experience = obj.experience;
+                        existingVendor.terms_condition = obj.terms_condition;
+                        existingVendor.business_type = obj.business_type;
+                        existingVendor.payment_mode = obj.payment_mode;
+                        existingVendor.owner_name = obj.owner_name;
+                        existingVendor.owner_id_no = obj.owner_id_no;
+                        existingVendor.owner_tin_no = obj.owner_tin_no;
+                        existingVendor.bankcode = obj.bankcode;
+                        existingVendor.branch = obj.branch;
+                        existingVendor.acc_name = obj.acc_name;
+                        existingVendor.acc_number = obj.acc_number;
+                        existingVendor.routeno = obj.routeno;
+                        existingVendor.links = obj.links;
+                        existingVendor.rescode = obj.rescode;
+                        existingVendor.is_audit = obj.is_audit;
+                        existingVendor.user_photo = obj.user_photo;
+                        existingVendor.is_hold = obj.is_hold;
+                        existingVendor.is_approved = obj.is_approved;
+
                     }
 
                     await dbContext.SaveChangesAsync();
@@ -187,6 +232,12 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
+                System.Diagnostics.Debug.WriteLine($"ERROR in InsertOrUpdateVendor: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
                 return 0;
             }
         }
