@@ -10,18 +10,14 @@ namespace VeloPortal.Domain.Extensions
         public static List<T> DataTableToList<T>(this DataTable dataTable) where T : new()
         {
             var dataList = new List<T>();
-
-            //Define what attributes to be read from the class
             const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance;
-
-            //Read Attribute Names and Types
+   
             var objFieldNames = typeof(T).GetProperties(flags).Cast<System.Reflection.PropertyInfo>().
                 Select(item => new
                 {
                     Name = item.Name,
                     Type = Nullable.GetUnderlyingType(item.PropertyType) ?? item.PropertyType
                 }).ToList();
-
             //Read Datatable column names and types
             var dtlFieldNames = dataTable.Columns.Cast<DataColumn>().
                 Select(item => new
@@ -29,20 +25,15 @@ namespace VeloPortal.Domain.Extensions
                     Name = item.ColumnName,
                     Type = item.DataType
                 }).ToList();
-
             foreach (DataRow dataRow in dataTable.AsEnumerable().ToList())
             {
                 var classObj = new T();
-
                 foreach (var dtField in dtlFieldNames)
                 {
                     System.Reflection.PropertyInfo propertyInfos = classObj.GetType().GetProperty(dtField.Name);
-
                     var field = objFieldNames.Find(x => x.Name == dtField.Name);
-
                     if (field != null)
                     {
-
                         if (propertyInfos.PropertyType == typeof(DateTime))
                         {
                             propertyInfos.SetValue
@@ -58,15 +49,40 @@ namespace VeloPortal.Domain.Extensions
                             propertyInfos.SetValue
                             (classObj, ConvertToInt(dataRow[dtField.Name]), null);
                         }
+                        else if (propertyInfos.PropertyType == typeof(Nullable<int>))
+                        {
+                            propertyInfos.SetValue
+                            (classObj, ConvertToNullableInt(dataRow[dtField.Name]), null);
+                        }
                         else if (propertyInfos.PropertyType == typeof(long))
                         {
                             propertyInfos.SetValue
                             (classObj, ConvertToLong(dataRow[dtField.Name]), null);
                         }
+                        else if (propertyInfos.PropertyType == typeof(Nullable<long>))
+                        {
+                            propertyInfos.SetValue
+                            (classObj, ConvertToNullableLong(dataRow[dtField.Name]), null);
+                        }
                         else if (propertyInfos.PropertyType == typeof(decimal))
                         {
                             propertyInfos.SetValue
                             (classObj, ConvertToDecimal(dataRow[dtField.Name]), null);
+                        }
+                        else if (propertyInfos.PropertyType == typeof(Nullable<decimal>))
+                        {
+                            propertyInfos.SetValue
+                            (classObj, ConvertToNullableDecimal(dataRow[dtField.Name]), null);
+                        }
+                        else if (propertyInfos.PropertyType == typeof(bool))
+                        {
+                            propertyInfos.SetValue
+                            (classObj, ConvertToBool(dataRow[dtField.Name]), null);
+                        }
+                        else if (propertyInfos.PropertyType == typeof(Nullable<bool>))
+                        {
+                            propertyInfos.SetValue
+                            (classObj, ConvertToNullableBool(dataRow[dtField.Name]), null);
                         }
                         else if (propertyInfos.PropertyType == typeof(String))
                         {
@@ -85,13 +101,82 @@ namespace VeloPortal.Domain.Extensions
                         {
                             propertyInfos.SetValue
                                 (classObj, Convert.ChangeType(dataRow[dtField.Name], propertyInfos.PropertyType), null);
-
                         }
                     }
                 }
                 dataList.Add(classObj);
             }
             return dataList;
+        }
+
+        // Add these new helper methods for nullable types
+        private static int? ConvertToNullableInt(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return null;
+            if (value is int intValue)
+                return intValue;
+            if (int.TryParse(value.ToString(), out int result))
+                return result;
+            return null;
+        }
+
+        private static long? ConvertToNullableLong(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return null;
+            if (value is long longValue)
+                return longValue;
+            if (long.TryParse(value.ToString(), out long result))
+                return result;
+            return null;
+        }
+
+        private static decimal? ConvertToNullableDecimal(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return null;
+            if (value is decimal decValue)
+                return decValue;
+            if (decimal.TryParse(value.ToString(), out decimal result))
+                return result;
+            return null;
+        }
+
+        private static bool? ConvertToNullableBool(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return null;
+            if (value is bool boolValue)
+                return boolValue;
+            if (value is int intValue)
+                return intValue != 0;
+            if (value is string strValue)
+            {
+                return strValue.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                       strValue.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                       strValue.Equals("yes", StringComparison.OrdinalIgnoreCase);
+            }
+            if (bool.TryParse(value.ToString(), out bool result))
+                return result;
+            return null;
+        }
+
+        private static bool ConvertToBool(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return false;
+            if (value is bool boolValue)
+                return boolValue;
+            if (value is int intValue)
+                return intValue != 0;
+            if (value is string strValue)
+            {
+                return strValue.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                       strValue.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                       strValue.Equals("yes", StringComparison.OrdinalIgnoreCase);
+            }
+            return Convert.ToBoolean(value);
         }
 
         //public static IEnumerable<T> DataTableToIEnurable<T>(this DataTable dataTable) where T : new()
