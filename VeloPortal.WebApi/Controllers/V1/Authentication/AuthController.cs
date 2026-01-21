@@ -149,9 +149,9 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// </summary>
         [HttpGet("get-vendor-profile")]
         [Authorize]
-        public async Task<IActionResult> GetProfile(string comcod, string vendor_email)
+        public async Task<IActionResult> GetVendorProfile(string comcod, string vendor_email)
         {
-            var user = await _userRepo.FindUserByEmailAsync(comcod, "Vendor", vendor_email);
+            var user = await _userRepo.FindUserByVendorEmailAsync(comcod, "Vendor", vendor_email);
             if (user == null)
                 return NotFound(new { Success = false, message = "Profile not found." });
 
@@ -163,7 +163,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// </summary>
         [HttpPost("update-vendor-profile")]
         [Authorize]
-        public async Task<IActionResult> UpdateProfile(VendorProfile dto)
+        public async Task<IActionResult> UpdateVendorProfile(VendorProfile dto)
         {
             if (dto == null || dto.vendor_profile_id == 0)
                 return BadRequest(new { Success = false, message = "Invalid profile data." });
@@ -178,6 +178,39 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             return StatusCode(500, new { Success = false, message = "Failed to update profile." });
         }
 
+        /// <summary>
+        /// Retrieves the full profile of a customer by email.
+        /// </summary>
+        [HttpGet("get-customer-profile")]
+        [Authorize]
+        public async Task<IActionResult> GetCustomerProfile(string comcod, string cust_email)
+        {
+            var user = await _userRepo.FindUserByCustomerEmailAsync(comcod, "Customer", cust_email);
+            if (user == null)
+                return NotFound(new { Success = false, message = "Profile not found." });
+
+            return Ok(new { Success = true, data = user });
+        }
+
+        /// <summary>
+        /// Updates the customer profile details.
+        /// </summary>
+        [HttpPost("update-customer-profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateCustomerProfile(SupportUser dto)
+        {
+            if (dto == null || dto.sup_user_id == 0)
+                return BadRequest(new { Success = false, message = "Invalid profile data." });
+
+            long resultId = await _userRepo.InsertOrUpdateCustomer(dto, HelperEnums.Action.Update.ToString());
+
+            if (resultId > 0)
+            {
+                return Ok(new { Success = true, message = "Profile updated successfully!", id = resultId });
+            }
+
+            return StatusCode(500, new { Success = false, message = "Failed to update profile." });
+        }
 
         //[HttpPost("refresh")]
         //public async Task<IActionResult> Refresh(DtoJwtToken dto)
