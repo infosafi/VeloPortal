@@ -90,7 +90,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-        public async Task<VendorProfile?> FindUserByEmailAsync(string comcod, string user_type, string vendor_email)
+        public async Task<VendorProfile?> FindUserByVendorEmailAsync(string comcod, string user_type, string vendor_email)
         {
 
             try
@@ -116,6 +116,35 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<VendorProfile?>(null);
+            }
+        }
+
+        public async Task<SupportUser?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email)
+        {
+
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<SupportUser?>(null);
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_CustomerProfile", user_type, cust_email);
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<SupportUser?>(null);
+                }
+
+                var userList = ds.Tables[0].DataTableToList<SupportUser>();
+                var user = userList?.FirstOrDefault();
+
+                return await Task.FromResult(user);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<SupportUser?>(null);
             }
         }
 
@@ -227,6 +256,62 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
 
                     await dbContext.SaveChangesAsync();
                     return obj.vendor_profile_id;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                System.Diagnostics.Debug.WriteLine($"ERROR in InsertOrUpdateVendor: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                return 0;
+            }
+        }
+
+        public async Task<long> InsertOrUpdateCustomer(SupportUser obj, string action)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    if (action == HelperEnums.Action.Add.ToString())
+                    {
+                        //obj.vendorid ??= "";
+                        //obj.experience ??= 0;
+                        //obj.business_type ??= 0;
+                        //obj.num_of_client ??= 0;
+                        //obj.ong_num_of_client ??= 0;
+
+
+                        await dbContext.SupportUsers.AddAsync(obj);
+                    }
+                    else
+                    {
+
+                        var existingCustomer = await dbContext.SupportUsers
+                            .FirstOrDefaultAsync(v => v.sup_user_id == obj.sup_user_id);
+
+                        if (existingCustomer == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"ERROR: Vendor with ID {obj.sup_user_id} not found");
+                            return 0;
+                        }
+
+                        // Update properties
+                        //existingCustomer.comcod = obj.comcod;
+                        //existingCustomer.vendorid = obj.vendorid;
+                        //existingCustomer.company_name = obj.company_name;
+                        //existingCustomer.address = obj.address;
+                        //existingCustomer.compan_overview = obj.compan_overview;
+                   
+
+                    }
+
+                    await dbContext.SaveChangesAsync();
+                    return obj.sup_user_id;
                 }
             }
             catch (Exception ex)
