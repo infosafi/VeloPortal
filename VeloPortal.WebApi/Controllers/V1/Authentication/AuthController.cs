@@ -624,10 +624,10 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 userType = "Vendor";
                 userPrefix = "99";
             }
-            else if (dto.user_role.StartsWith("51"))
+            else if (dto.user_role.StartsWith("15"))
             {
                 userType = "Customer";
-                userPrefix = "51";
+                userPrefix = "15";
             }
             else
             {
