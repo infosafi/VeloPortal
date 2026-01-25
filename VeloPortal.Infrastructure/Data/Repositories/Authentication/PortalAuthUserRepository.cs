@@ -300,13 +300,10 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                             return 0;
                         }
 
-                        // Update properties
-                        //existingCustomer.comcod = obj.comcod;
-                        //existingCustomer.vendorid = obj.vendorid;
-                        //existingCustomer.company_name = obj.company_name;
-                        //existingCustomer.address = obj.address;
-                        //existingCustomer.compan_overview = obj.compan_overview;
-                   
+                        existingCustomer.fullname = obj.fullname;
+                        existingCustomer.username = obj.username;
+                        existingCustomer.suser_email = obj.suser_email;
+                        existingCustomer.suser_phone = obj.suser_phone;
 
                     }
 
