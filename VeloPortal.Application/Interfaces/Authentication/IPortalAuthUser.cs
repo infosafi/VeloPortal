@@ -9,7 +9,7 @@ namespace VeloPortal.Application.Interfaces.Authentication
         Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email);
         Task<VendorProfile?> FindUserByVendorEmailAsync(string comcod, string user_type, string vendor_email);
         Task<SupportUser?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email);
-        Task<long> InsertOrUpdateVendor(VendorProfile obj, string action);
+        Task<VendorProfile> InsertOrUpdateVendor(VendorProfile obj, string action);
         Task<long> InsertOrUpdateCustomer(SupportUser obj, string action);
         Task<bool> UpdatePasswordAsync(string comcod, string user_type, string userId, string new_password, string portal_role);
     }

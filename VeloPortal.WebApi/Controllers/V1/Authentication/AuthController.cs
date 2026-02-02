@@ -106,7 +106,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             try
             {
-                // 2. Check if user already exists
+          
                 var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
                 if (existingUser != null && existingUser.unq_id != 0)
                 {
@@ -128,14 +128,15 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     is_audit = true
                 };
 
-                long result = await _userRepo.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
-
-                if (result > 0)
+                var result = await _userRepo.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+                
+                if (result == null)
                 {
-                    return Ok(new { Success = true, message = "Registration successful! Please wait for account verification." });
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Registration failed at the database level."));
                 }
 
-                return BadRequest(new { Success = false, message = "Registration failed at the database level." });
+                return Ok(ApiResponse<VendorProfile>.SuccessResponse(result, message: "Registration successful! Please wait for account verification."));
+
             }
             catch (Exception ex)
             {
@@ -165,17 +166,26 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [Authorize]
         public async Task<IActionResult> UpdateVendorProfile(VendorProfile dto)
         {
-            if (dto == null || dto.vendor_profile_id == 0)
-                return BadRequest(new { Success = false, message = "Invalid profile data." });
-
-            long resultId = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
-
-            if (resultId > 0)
+            if (dto.vendor_profile_id == 0)
             {
-                return Ok(new { Success = true, message = "Profile updated successfully!", id = resultId });
+                var result = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Add.ToString());
+
+                if (result == null)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
+                }
+
+                return Ok(ApiResponse<dynamic>.SuccessResponse(result, message: "Profile updated successfully!"));
             }
 
-            return StatusCode(500, new { Success = false, message = "Failed to update profile." });
+            var updatedResult = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
+
+            if (updatedResult == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
+            }
+
+            return Ok(ApiResponse<VendorProfile>.SuccessResponse(updatedResult, message: "Profile updated successfully"));
         }
 
         /// <summary>

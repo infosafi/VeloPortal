@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
@@ -8,6 +9,7 @@ using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
+using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
 using VeloPortal.Infrastructure.Data.SPHelper;
 
 namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
@@ -17,15 +19,17 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
 
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
         private readonly IConfiguration _configuration;
-   
+        private readonly ILogger<ServReqInfRepository> _logger;
         private readonly SPProcessAccess? _spProcessAccess;
 
 
         public PortalAuthUserRepository(
           IDbContextFactory<VeloPortalDbContext> dbContextFactory,
+         ILogger<ServReqInfRepository> logger,
           IConfiguration configuration)
         {
             _dbContextFactory = dbContextFactory;
+            _logger = logger;
             _configuration = configuration;
 
 
@@ -167,96 +171,150 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         }
 
 
-        public async Task<long> InsertOrUpdateVendor(VendorProfile obj, string action)
+        public async Task<VendorProfile> InsertOrUpdateVendor(VendorProfile obj, string action)
         {
             try
             {
-                using (var dbContext = _dbContextFactory.CreateDbContext())
+
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+
+                if (action == HelperEnums.Action.Add.ToString())
                 {
-                    if (action == HelperEnums.Action.Add.ToString())
+
+                    if (_spProcessAccess == null)
                     {
-                        obj.vendorid ??= "";
-                        obj.experience ??= 0;
-                        obj.business_type ??= 0;
-                        obj.num_of_client ??= 0;
-                        obj.ong_num_of_client ??= 0;
-                        obj.company_bin ??= "";
-                        obj.compan_overview ??= "";
-                        obj.acc_name ??= "";
-                        obj.acc_number ??= "";
-                        obj.address ??= "";
-                        obj.bankcode ??= "";
-                        obj.branch ??= "";
-                        obj.routeno ??= "";
-                        obj.designation ??= "";
-                        obj.contact_person ??= "";
-                        obj.secondary_contact_no ??= "";
-                        obj.owner_name ??= "";
-                        obj.owner_id_no ??= "";
-                        obj.owner_tin_no ??= "";
-                        obj.rescode ??= "";
-                        obj.license_no ??= "";
-                        obj.terms_condition ??= "";
-                        obj.payment_mode ??= "";
-                        obj.links ??= "";
-                        obj.user_photo ??= "";
-
-                        await dbContext.VendorProfile.AddAsync(obj);
-                    }
-                    else 
-                    {
-
-                        var existingVendor = await dbContext.VendorProfile
-                            .FirstOrDefaultAsync(v => v.vendor_profile_id == obj.vendor_profile_id);
-
-                        if (existingVendor == null)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"ERROR: Vendor with ID {obj.vendor_profile_id} not found");
-                            return 0;
-                        }
-
-                        // Update properties
-                        existingVendor.comcod = obj.comcod;
-                        existingVendor.vendorid = obj.vendorid;
-                        existingVendor.company_name = obj.company_name;
-                        existingVendor.address = obj.address;
-                        existingVendor.compan_overview = obj.compan_overview;
-                        existingVendor.company_bin = obj.company_bin;
-                        existingVendor.contact_no = obj.contact_no;
-                        existingVendor.vendor_email = obj.vendor_email;
-                        existingVendor.license_no = obj.license_no;
-                        existingVendor.num_of_client = obj.num_of_client;
-                        existingVendor.ong_num_of_client = obj.ong_num_of_client;
-                        existingVendor.contact_person = obj.contact_person;
-                        existingVendor.secondary_contact_no = obj.secondary_contact_no;
-                        existingVendor.designation = obj.designation;
-                        existingVendor.is_available = obj.is_available;
-                        existingVendor.is_verify_acc = obj.is_verify_acc;
-                        existingVendor.is_email_verify = obj.is_email_verify;
-                        existingVendor.experience = obj.experience;
-                        existingVendor.terms_condition = obj.terms_condition;
-                        existingVendor.business_type = obj.business_type;
-                        existingVendor.payment_mode = obj.payment_mode;
-                        existingVendor.owner_name = obj.owner_name;
-                        existingVendor.owner_id_no = obj.owner_id_no;
-                        existingVendor.owner_tin_no = obj.owner_tin_no;
-                        existingVendor.bankcode = obj.bankcode;
-                        existingVendor.branch = obj.branch;
-                        existingVendor.acc_name = obj.acc_name;
-                        existingVendor.acc_number = obj.acc_number;
-                        existingVendor.routeno = obj.routeno;
-                        existingVendor.links = obj.links;
-                        existingVendor.rescode = obj.rescode;
-                        existingVendor.is_audit = obj.is_audit;
-                        existingVendor.user_photo = obj.user_photo;
-                        existingVendor.is_hold = obj.is_hold;
-                        existingVendor.is_approved = obj.is_approved;
-
+                        _logger.LogWarning("_spProcessAccess is not initialized.");
+                        return null;
                     }
 
-                    await dbContext.SaveChangesAsync();
-                    return obj.vendor_profile_id;
+                    DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Latest_Service_Code");
+
+                    if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var lst = ds.Tables[0].DataTableToDynamicList();
+                    var latestServiceNo = lst.First().service_no.ToString();
+
+                    if (string.IsNullOrWhiteSpace(latestServiceNo))
+                    {
+                        return null;
+                    }
+
+                    //obj.service_no = latestServiceNo;
+
+
+                    obj.vendorid ??= "";
+                    obj.experience ??= 0;
+                    obj.business_type ??= 0;
+                    obj.num_of_client ??= 0;
+                    obj.ong_num_of_client ??= 0;
+                    obj.company_bin ??= "";
+                    obj.compan_overview ??= "";
+                    obj.acc_name ??= "";
+                    obj.acc_number ??= "";
+                    obj.address ??= "";
+                    obj.bankcode ??= "";
+                    obj.branch ??= "";
+                    obj.routeno ??= "";
+                    obj.designation ??= "";
+                    obj.contact_person ??= "";
+                    obj.secondary_contact_no ??= "";
+                    obj.owner_name ??= "";
+                    obj.owner_id_no ??= "";
+                    obj.owner_tin_no ??= "";
+                    obj.rescode ??= "";
+                    obj.license_no ??= "";
+                    obj.terms_condition ??= "";
+                    obj.payment_mode ??= "";
+                    obj.links ??= "";
+                    obj.user_photo ??= "";
+
+                    await dbContext.VendorProfile.AddAsync(obj);
                 }
+                else
+                {
+
+                    var existingVendor = await dbContext.VendorProfile
+                        .FirstOrDefaultAsync(v =>
+                        v.comcod == obj.comcod &&
+                        v.vendor_profile_id == obj.vendor_profile_id
+                        );
+
+
+                    if (_spProcessAccess == null)
+                    {
+                        _logger.LogWarning("_spProcessAccess is not initialized.");
+                        return null;
+                    }
+
+                    DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Latest_Service_Code");
+
+                    if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var lst = ds.Tables[0].DataTableToDynamicList();
+                    var latestServiceNo = lst.First().service_no.ToString();
+
+                    if (string.IsNullOrWhiteSpace(latestServiceNo))
+                    {
+                        return null;
+                    }
+
+                    if (existingVendor == null)
+                    {
+                        return null;
+                    }
+
+
+                    // Update properties
+                    existingVendor.comcod = obj.comcod;
+                    existingVendor.vendorid = obj.vendorid;
+                    existingVendor.company_name = obj.company_name;
+                    existingVendor.address = obj.address;
+                    existingVendor.compan_overview = obj.compan_overview;
+                    existingVendor.company_bin = obj.company_bin;
+                    existingVendor.contact_no = obj.contact_no;
+                    existingVendor.vendor_email = obj.vendor_email;
+                    existingVendor.license_no = obj.license_no;
+                    existingVendor.num_of_client = obj.num_of_client;
+                    existingVendor.ong_num_of_client = obj.ong_num_of_client;
+                    existingVendor.contact_person = obj.contact_person;
+                    existingVendor.secondary_contact_no = obj.secondary_contact_no;
+                    existingVendor.designation = obj.designation;
+                    existingVendor.is_available = obj.is_available;
+                    existingVendor.is_verify_acc = obj.is_verify_acc;
+                    existingVendor.is_email_verify = obj.is_email_verify;
+                    existingVendor.experience = obj.experience;
+                    existingVendor.terms_condition = obj.terms_condition;
+                    existingVendor.business_type = obj.business_type;
+                    existingVendor.payment_mode = obj.payment_mode;
+                    existingVendor.owner_name = obj.owner_name;
+                    existingVendor.owner_id_no = obj.owner_id_no;
+                    existingVendor.owner_tin_no = obj.owner_tin_no;
+                    existingVendor.bankcode = obj.bankcode;
+                    existingVendor.branch = obj.branch;
+                    existingVendor.acc_name = obj.acc_name;
+                    existingVendor.acc_number = obj.acc_number;
+                    existingVendor.routeno = obj.routeno;
+                    existingVendor.links = obj.links;
+                    existingVendor.rescode = obj.rescode;
+                    existingVendor.is_audit = obj.is_audit;
+                    existingVendor.user_photo = obj.user_photo;
+                    existingVendor.is_hold = obj.is_hold;
+                    existingVendor.is_approved = obj.is_approved;
+
+                }
+
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return obj;
             }
             catch (Exception ex)
             {
@@ -267,7 +325,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 {
                     System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
                 }
-                return 0;
+                return null;
             }
         }
 
