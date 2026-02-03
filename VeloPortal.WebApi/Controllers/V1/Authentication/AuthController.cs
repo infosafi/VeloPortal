@@ -125,7 +125,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     is_verify_acc = false,
                     is_approved = false,
                     is_hold = false,
-                    is_audit = true
+                    is_audit = false
                 };
 
                 var result = await _userRepo.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
