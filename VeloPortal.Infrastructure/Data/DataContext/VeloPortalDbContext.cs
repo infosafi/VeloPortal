@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
+using VeloPortal.Domain.Entities.SystemConfig;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
 {
@@ -14,6 +15,9 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
+        #region System configuration
+        public DbSet<ResCodeInf> ResCodeInf { get; set; }
+        #endregion
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
         public DbSet<VendorProfile> VendorProfile { get; set; }
