@@ -17,6 +17,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region System configuration
         public DbSet<ResCodeInf> ResCodeInf { get; set; }
+        public DbSet<Industries> Industries { get; set; }
         #endregion
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
