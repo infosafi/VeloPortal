@@ -183,31 +183,22 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 if (action == HelperEnums.Action.Add.ToString())
                 {
 
-                    if (_spProcessAccess == null)
+                    var lastVendorId = await dbContext.VendorProfile
+                                        .OrderByDescending(v => v.vendorid)
+                                        .Select(v => v.vendorid)
+                                        .FirstOrDefaultAsync();
+
+                    int nextIdNumber = 1;
+                    if (!string.IsNullOrEmpty(lastVendorId))
                     {
-                        _logger.LogWarning("_spProcessAccess is not initialized.");
-                        return null;
+                        if (int.TryParse(lastVendorId, out int lastId))
+                        {
+                            nextIdNumber = lastId + 1;
+                        }
                     }
 
-                    DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Latest_Service_Code");
-
-                    if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    var lst = ds.Tables[0].DataTableToDynamicList();
-                    var latestServiceNo = lst.First().service_no.ToString();
-
-                    if (string.IsNullOrWhiteSpace(latestServiceNo))
-                    {
-                        return null;
-                    }
-
-                    //obj.service_no = latestServiceNo;
-
-
-                    obj.vendorid ??= "";
+                    // "D10" formats the integer with leading zeros to 10 digits
+                    obj.vendorid = nextIdNumber.ToString("D10");
                     obj.experience ??= 0;
                     obj.business_type ??= 0;
                     obj.num_of_client ??= 0;
@@ -244,27 +235,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                         v.vendor_profile_id == obj.vendor_profile_id
                         );
 
-
-                    if (_spProcessAccess == null)
-                    {
-                        _logger.LogWarning("_spProcessAccess is not initialized.");
-                        return null;
-                    }
-
-                    DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Latest_Service_Code");
-
-                    if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    var lst = ds.Tables[0].DataTableToDynamicList();
-                    var latestServiceNo = lst.First().service_no.ToString();
-
-                    if (string.IsNullOrWhiteSpace(latestServiceNo))
-                    {
-                        return null;
-                    }
+              
 
                     if (existingVendor == null)
                     {
@@ -273,8 +244,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
 
 
                     // Update properties
-                    existingVendor.comcod = obj.comcod;
-                    existingVendor.vendorid = obj.vendorid;
                     existingVendor.company_name = obj.company_name;
                     existingVendor.address = obj.address;
                     existingVendor.compan_overview = obj.compan_overview;
@@ -337,11 +306,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 {
                     if (action == HelperEnums.Action.Add.ToString())
                     {
-                        //obj.vendorid ??= "";
-                        //obj.experience ??= 0;
-                        //obj.business_type ??= 0;
-                        //obj.num_of_client ??= 0;
-                        //obj.ong_num_of_client ??= 0;
 
 
                         await dbContext.SupportUsers.AddAsync(obj);
