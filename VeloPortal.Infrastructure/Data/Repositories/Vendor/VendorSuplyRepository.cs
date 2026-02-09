@@ -4,6 +4,7 @@ using System.Data;
 using VeloPortal.Application.DTOs.Vendor;
 using VeloPortal.Application.Interfaces.Vendor;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.Vendor;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.SPHelper;
@@ -50,6 +51,34 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Vendor
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<IEnumerable<DtoVendorSuply>?>(null);
+            }
+        }
+
+        public async Task<bool> SaveVendorSuply(VendorSuply vendorSuply)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                var existing = await dbContext.VendorSuply
+                    .FirstOrDefaultAsync(x => x.sup_item_id == vendorSuply.sup_item_id);
+
+                if (existing == null)
+                {
+                    await dbContext.VendorSuply.AddAsync(vendorSuply);
+                }
+                else
+                {
+                    dbContext.Entry(existing).CurrentValues.SetValues(vendorSuply);
+                }
+
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
             }
         }
     }
