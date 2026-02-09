@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Vendor;
 using VeloPortal.Application.Interfaces.Vendor;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.Vendor;
 using VeloPortal.Domain.Extensions;
 
 namespace VeloPortal.WebApi.Controllers.V1.Vendor
@@ -33,5 +34,29 @@ namespace VeloPortal.WebApi.Controllers.V1.Vendor
             return Ok(ApiResponse<IEnumerable<DtoVendorSuply>>.SuccessResponse(response, message: response.Count() + " Supplier Supply Items Found"));
 
         }
+
+        /// <summary>
+        /// Save Supply Item.
+        /// </summary>
+        /// <param name="supplyItems">All Save Supply Item.</param>
+        /// <returns><returns>
+        [HttpPost("save-vendor-supply")]
+        public async Task<IActionResult> SaveVendorSupply(VendorSuply supplyItems)
+        {
+            try
+            {
+                var response = await _vendorSuply.SaveVendorSuply(supplyItems);
+                if(response)
+                {
+                    return Ok(ApiResponse<bool>.SuccessResponse(response, message: "Vendor Supply saved successfully"));
+                }
+                return BadRequest(ApiResponse<bool>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Vendor Supply save Failed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving  Service resources: {ex.Message}" }, "Internal Server Error"));
+            }
+        }
+
     }
 }
