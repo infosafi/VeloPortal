@@ -40,7 +40,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Vendor
         /// </summary>
         /// <param name="supplyItems">All Save Supply Item.</param>
         /// <returns><returns>
-        [HttpPost("save-vendor-supply")]
+        [HttpPost("save-supplier-items")]
         public async Task<IActionResult> SaveVendorSupply(VendorSuply supplyItems)
         {
             try
