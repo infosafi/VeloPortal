@@ -12,24 +12,26 @@ namespace VeloPortal.Domain.Entities.Vendor
     [PrimaryKey(nameof(sup_item_id))]
     public class VendorSuply
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long sup_item_id { get; set; }
-        public string comcod { get; set; }
-        public string rescode { get; set; }
-        public string spcfcode { get; set; }
-        public string refid { get; set; }
+        public string comcod { get; set; } = string.Empty;
+        public string rescode { get; set; } = string.Empty;
+        public string spcfcode { get; set; } = string.Empty;
+        public string refid { get; set; } = string.Empty;
         public decimal rate { get; set; }
         public long currency_id { get; set; }
         public decimal currency_rate { get; set; }
-        public string remarks { get; set; }
+        public string remarks { get; set; } = string.Empty;
         public bool is_audit { get; set; }
         public DateTime audit_date { get; set; }
         public int audit_by { get; set; }
         public int num_of_client { get; set; }
         public decimal num_of_experience { get; set; }
-        public string medium { get; set; }
+        public string medium { get; set; } = string.Empty;
         public int lead_time { get; set; }
         public DateTime created_date { get; set; }
 
+        public VendorSuply() {}
         public VendorSuply(long sup_item_id_, string comcod_, string rescode_, string spcfcode_, string refid_, decimal rate_, long currency_id_, decimal currency_rate_, string remarks_, bool is_audit_, DateTime audit_date_, int audit_by_, int num_of_client_, decimal num_of_experience_, string medium_, int lead_time_, DateTime created_date_)
         {
             this.sup_item_id = sup_item_id_;

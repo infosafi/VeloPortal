@@ -54,22 +54,25 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Vendor
             }
         }
 
-        public async Task<bool> SaveVendorSuply(VendorSuply vendorSuply)
+        public async Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> supplyItems)
         {
             try
             {
                 using var dbContext = _dbContextFactory.CreateDbContext();
 
-                var existing = await dbContext.VendorSuply
-                    .FirstOrDefaultAsync(x => x.sup_item_id == vendorSuply.sup_item_id);
+                foreach (var item in supplyItems)
+                {
+                    var existing = await dbContext.VendorSuply
+                        .FirstOrDefaultAsync(x => x.sup_item_id == item.sup_item_id && x.sup_item_id != 0);
 
-                if (existing == null)
-                {
-                    await dbContext.VendorSuply.AddAsync(vendorSuply);
-                }
-                else
-                {
-                    dbContext.Entry(existing).CurrentValues.SetValues(vendorSuply);
+                    if (existing == null)
+                    {
+                        await dbContext.VendorSuply.AddAsync(item);
+                    }
+                    else
+                    {
+                        dbContext.Entry(existing).CurrentValues.SetValues(item);
+                    }
                 }
 
                 await dbContext.SaveChangesAsync();

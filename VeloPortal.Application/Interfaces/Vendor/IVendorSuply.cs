@@ -6,6 +6,6 @@ namespace VeloPortal.Application.Interfaces.Vendor
     public interface IVendorSuply
     {
         Task<IEnumerable<DtoVendorSuply>?> GetSupplierSupplyItems(string? comcod);
-        Task<bool> SaveVendorSuply(VendorSuply vendorSuply);
+        Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> vendorSuply);
     }
 }
