@@ -2,6 +2,7 @@
 {
     public class DtoVendorSuply
     {
+        public long sup_item_id { get; set; }
         public string? comcod { get; set; }
         public string? rescode { get; set; }
         public string? resdesc { get; set; }
