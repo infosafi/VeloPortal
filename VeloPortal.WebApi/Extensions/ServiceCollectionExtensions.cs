@@ -87,6 +87,7 @@ namespace VeloPortal.WebApi.Extensions
             #region System configuration Service add
             services.AddScoped<IIndustries, IndustriesRepository>();
             services.AddScoped<IResCodeInf, ResCodeInfRepository>();
+            services.AddScoped<IAccCodeInf, AccCodeInfRepository>();
             #endregion
 
             #region start Authentication Service add
