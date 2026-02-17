@@ -13,7 +13,7 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize]
-    public class CodeBookController(IResCodeInf _rescodeInf) : ControllerBase
+    public class CodeBookController(IAccCodeInf _acccodebook, IResCodeInf _rescodeInf) : ControllerBase
     {
         #region Resource Code Book
         /// <summary>
@@ -56,6 +56,45 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
         #endregion
 
         #region Dynamic Code Book
+
+
+        /// <summary>
+        /// Gets List of Dynamic Code Book
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="label">This the Accounts label. such like 2,4,8,12.</param>
+        /// <param name="search_query">This the Dynamic Query of Accounts code. Example acccode like '11%'</param>       
+        /// <param name="user_id">This the Current user, if it set code book retrive as user permission if applicable.</param>        
+        /// <param name="is_manual_post">This the Boolean Paramter indicate Chatered Accounts code is for Manual Posting?, Default is false.</param>
+        /// <param name="is_last_head">This the Boolean Paramter indicate Last Transection or not default all are retrive.</param>
+
+        /// <returns>List of Dynamic Code Book</returns>
+        [HttpGet("get-dynamic-acc-code")]
+        public async Task<IActionResult> GetAccountsCodeBookInformation(string? comcod, string? label, string? search_query, int user_id, bool? is_manual_post,
+             bool is_last_head = true)
+        {
+            if (label == null || label.Length == 0 || Convert.ToInt32(label) > 12)
+            {
+                return NotFound(ApiResponse<AccCodeInf>.FailureResponse(
+                    new List<string> { "Label is Mandatory or Not Appropriate" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            if (search_query == null || search_query.Length == 0)
+            {
+                return NotFound(ApiResponse<AccCodeInf>.FailureResponse(
+                    new List<string> { "Searching query needed" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            var response = await _acccodebook.GetUserWiseAccCodeBookInfo(comcod, label, search_query, user_id, is_manual_post, is_last_head);
+
+
+            if (response == null)
+                return NotFound(ApiResponse<IEnumerable<DtoAccCodeBook>>.FailureResponse(
+                    new List<string> { "Accounts  Code not found or Query is wrong" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: "No Data Found"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: ""));
+        }
 
         /// <summary>
         /// Gets List of Resources Code Book
