@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.Net;
-using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;
 
 namespace VeloPortal.Infrastructure.Service
 {
-
     public class FtpConnectionResult
     {
         public bool IsValid { get; set; }
@@ -30,7 +28,7 @@ namespace VeloPortal.Infrastructure.Service
             _ftp = ftpOptions.Value;
         }
 
-        #pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014
 
         // ================= UPLOAD =================
         public async Task<string> UploadAsync(IFormFile file, string path = "")
@@ -38,20 +36,18 @@ namespace VeloPortal.Infrastructure.Service
             if (file == null || file.Length == 0)
                 throw new ArgumentException("File is empty");
 
+            await EnsureDirectoryExistsAsync(path);
             string fileName = Path.GetFileName(file.FileName);
-            string directoryUrl = $"{_ftp.host}/{_ftp.root}/{path}".TrimEnd('/');
+            string directoryUrl = $"{_ftp.host.TrimEnd('/')}/{_ftp.root.Trim('/')}/{path.Trim('/')}".TrimEnd('/');
             string fileUrl = $"{directoryUrl}/{fileName}";
-
-            if (!DirectoryExists(directoryUrl))
-            {
-                CreateDirectory(directoryUrl);
-            }
 
             var request = CreateRequest(fileUrl, WebRequestMethods.Ftp.UploadFile);
 
-            using var input = file.OpenReadStream();
-            using var ftpStream = await request.GetRequestStreamAsync();
-            await input.CopyToAsync(ftpStream);
+            using (var input = file.OpenReadStream())
+            using (var ftpStream = await request.GetRequestStreamAsync())
+            {
+                await input.CopyToAsync(ftpStream);
+            }
 
             return fileUrl;
         }
@@ -77,7 +73,6 @@ namespace VeloPortal.Infrastructure.Service
             using var response = (FtpWebResponse)await request.GetResponseAsync();
             return response.StatusCode == FtpStatusCode.FileActionOK;
         }
-
         public async Task<FtpConnectionResult> CheckConnectionWithMessageAsync()
         {
             try
@@ -116,7 +111,33 @@ namespace VeloPortal.Infrastructure.Service
         }
 
         // ================= HELPERS =================
-        private bool DirectoryExists(string url)
+
+        private async Task EnsureDirectoryExistsAsync(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            string[] segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            string currentUrl = $"{_ftp.host.TrimEnd('/')}/{_ftp.root.Trim('/')}";
+
+            foreach (var segment in segments)
+            {
+                currentUrl = $"{currentUrl}/{segment}";
+                if (!CheckDirectoryExists(currentUrl))
+                {
+                    try
+                    {
+                        var request = CreateRequest(currentUrl, WebRequestMethods.Ftp.MakeDirectory);
+                        using var response = (FtpWebResponse)await request.GetResponseAsync();
+                    }
+                    catch (WebException ex)
+                    {
+                        throw new Exception("Something went wrong." + ex.Message);
+                    }
+                }
+            }
+        }
+
+        private bool CheckDirectoryExists(string url)
         {
             try
             {
@@ -124,18 +145,16 @@ namespace VeloPortal.Infrastructure.Service
                 using var response = (FtpWebResponse)request.GetResponse();
                 return true;
             }
-            catch (WebException ex) when (
-                ex.Response is FtpWebResponse res &&
-                res.StatusCode == FtpStatusCode.ActionNotTakenFileUnavailable)
+            catch (WebException ex)
             {
+                if (ex.Response is FtpWebResponse res &&
+                   (res.StatusCode == FtpStatusCode.ActionNotTakenFileUnavailable ||
+                    res.StatusCode == FtpStatusCode.ActionNotTakenFilenameNotAllowed))
+                {
+                    return false;
+                }
                 return false;
             }
-        }
-
-        private void CreateDirectory(string url)
-        {
-            var request = CreateRequest(url, WebRequestMethods.Ftp.MakeDirectory);
-            using var response = (FtpWebResponse)request.GetResponse();
         }
 
         private FtpWebRequest CreateRequest(string url, string method)
@@ -150,7 +169,6 @@ namespace VeloPortal.Infrastructure.Service
             return request;
         }
 
-        #pragma warning restore SYSLIB0014
-
+#pragma warning restore SYSLIB0014
     }
 }
