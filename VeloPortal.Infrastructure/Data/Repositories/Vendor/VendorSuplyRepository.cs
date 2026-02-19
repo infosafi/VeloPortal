@@ -29,6 +29,32 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Vendor
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(null);
+                }
+                IEnumerable<DtoVendorDashboardCounter>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Portal_Users_Vendor_Dashboard_Counter");
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoVendorDashboardCounter>();
+                return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(null);
+            }
+        }
+
+
         public async Task<IEnumerable<DtoVendorSuply>?> GetSupplierSupplyItems(string? comcod)
         {
             try

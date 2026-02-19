@@ -36,6 +36,27 @@ namespace VeloPortal.WebApi.Controllers.V1.Vendor
         }
 
         /// <summary>
+        /// Get Vendor Dashboard counters for quotations, work orders, and supply metrics
+        /// </summary>
+        /// <param name="comcod">Company code</param>
+        /// <param name="user_role">User role identifier (e.g., '14' for Vendor)</param>
+        /// <param name="unq_id">Unique user/vendor identifier</param>
+        /// <returns>A collection of dashboard metrics including quotation counts and order amounts</returns>
+
+        [HttpGet("get-vendor-dashboard-counter")]
+        public async Task<IActionResult> GetVendorDashboardCounter(string? comcod)
+        {
+            var response = await _vendorSuply.GetVendorDashboardCounter(comcod);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No Vendor Dashboard Data Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            return Ok(ApiResponse<IEnumerable<DtoVendorDashboardCounter>>.SuccessResponse(response, message: response.Count() + " Vendor Dashboard Counter Data Found"));
+
+        }
+
+        /// <summary>
         /// Save Supply Item.
         /// </summary>
         /// <param name="supplyItems">All Save Supply Item.</param>

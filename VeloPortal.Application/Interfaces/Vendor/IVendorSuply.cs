@@ -1,4 +1,5 @@
-﻿using VeloPortal.Application.DTOs.Vendor;
+﻿using VeloPortal.Application.DTOs.ServiceRequest;
+using VeloPortal.Application.DTOs.Vendor;
 using VeloPortal.Domain.Entities.Vendor;
 
 namespace VeloPortal.Application.Interfaces.Vendor
@@ -7,5 +8,6 @@ namespace VeloPortal.Application.Interfaces.Vendor
     {
         Task<IEnumerable<DtoVendorSuply>?> GetSupplierSupplyItems(string? comcod);
         Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> vendorSuply);
+        Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod);
     }
 }
