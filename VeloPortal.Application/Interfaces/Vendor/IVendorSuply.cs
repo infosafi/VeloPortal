@@ -9,5 +9,6 @@ namespace VeloPortal.Application.Interfaces.Vendor
         Task<IEnumerable<DtoVendorSuply>?> GetSupplierSupplyItems(string? comcod);
         Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> vendorSuply);
         Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod);
+        Task<IEnumerable<DtoPeriodicRfqlist>?> GetPeriodicRfqlist(string? comcod, string? rescode);
     }
 }
