@@ -6,6 +6,7 @@ using VeloPortal.Application.Interfaces.Vendor;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Vendor;
 using VeloPortal.Domain.Extensions;
+using static Azure.Core.HttpHeader;
 
 namespace VeloPortal.WebApi.Controllers.V1.Vendor
 {
@@ -53,6 +54,26 @@ namespace VeloPortal.WebApi.Controllers.V1.Vendor
                     new List<string> { "No Vendor Dashboard Data Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
             return Ok(ApiResponse<IEnumerable<DtoVendorDashboardCounter>>.SuccessResponse(response, message: response.Count() + " Vendor Dashboard Counter Data Found"));
+
+        }
+
+        /// <summary>
+        /// Retrieves a periodic list of Requests for Quotations (RFQ) for a specific vendor.
+        /// </summary>
+        /// <param name="comcod">The company code identifier.</param>
+        /// <param name="rescode">The vendor's resource code (rescode) obtained from their profile.</param>
+        /// <returns>A collection of RFQ details including status, dates, and identifiers.</returns>
+
+        [HttpGet("get-periodic-rfq-list")]
+        public async Task<IActionResult> GetPeriodicRfqlist(string? comcod, string? rescode)
+        {
+            var response = await _vendorSuply.GetPeriodicRfqlist(comcod, rescode);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No RFQ Data Found for the given parameters" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            return Ok(ApiResponse<IEnumerable<DtoPeriodicRfqlist>>.SuccessResponse(response, message: response.Count() + " RFQ items retrieved successfully."));
 
         }
 
