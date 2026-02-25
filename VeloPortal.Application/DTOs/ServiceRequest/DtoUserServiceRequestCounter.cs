@@ -13,5 +13,7 @@ namespace VeloPortal.Application.DTOs.ServiceRequest
         public int ttlobstacle { get; set; }
         public int donereq { get; set; }
         public int pendingreq { get; set; }
+        public int pending_feedback { get; set; }
+        public int completed { get; set; }
     }
 }
