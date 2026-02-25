@@ -176,6 +176,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
 
                     exist.customer_feedback = obj.customer_feedback;
                     exist.satisfaction = obj.satisfaction;
+                    exist.is_done = obj.is_done;
                 }
 
                 await dbContext.SaveChangesAsync();
