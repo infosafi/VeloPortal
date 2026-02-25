@@ -672,6 +672,11 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 userType = "Customer";
                 userPrefix = "15";
             }
+            else if (dto.user_role.StartsWith("51"))
+            {
+                userType = "Customer";
+                userPrefix = "51";
+            }
             else
             {
                 return BadRequest(new { Success = false, message = "Invalid user role!" });
