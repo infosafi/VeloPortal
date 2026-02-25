@@ -274,6 +274,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
 
                 existingData.satisfaction = obj.satisfaction;
                 existingData.customer_feedback = obj.customer_feedback;
+                existingData.is_done = true;
 
                 await dbContext.SaveChangesAsync();
                 return true;
