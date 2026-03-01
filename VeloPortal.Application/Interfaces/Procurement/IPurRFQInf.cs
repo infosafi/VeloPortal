@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using VeloPortal.Application.DTOs.Procurement;
 
 namespace VeloPortal.Application.Interfaces.Procurement
 {
     public interface IPurRFQInf
     {
+        Task<string?> InsertorUpdateRequestForQuoteInfo(DtoRFQInf obj);
         Task<IEnumerable<dynamic>?> GetSingleRFQList(string? comcod, string? rfqid);
     }
 }

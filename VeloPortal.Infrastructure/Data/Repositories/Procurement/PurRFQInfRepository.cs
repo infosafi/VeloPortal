@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using System.Text.Json;
+using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
@@ -36,6 +38,59 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<string?> InsertorUpdateRequestForQuoteInfo(DtoRFQInf obj)
+        {
+            try
+            {
+                await Task.Delay(1);
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
+                    return "";
+                }
+                if (obj == null)
+                {
+                    return "";
+                }
+                if (obj.DtoRFQDetails == null)
+                {
+                    return "";
+                }
+                if (obj.DtoRFQItems == null)
+                {
+                    return "";
+                }
+
+                if (obj.DtoRFQBidder == null)
+                {
+                    return "";
+                }
+
+                string json_purrfqdetails = JsonSerializer.Serialize(obj.DtoRFQDetails);
+                string json_purrfqitems = JsonSerializer.Serialize(obj.DtoRFQItems);
+                string json_purrfqbiider = JsonSerializer.Serialize(obj.DtoRFQBidder);
+
+
+
+                DataSet? result = _spProcessAccess.GetTransInfo20(obj.DtoRFQDetails.comcod ?? "", "itv_scm.SP_PROCUREMENT_MGT", "Update_Request_For_Quote_Info", json_purrfqdetails, json_purrfqitems, json_purrfqbiider);
+                if (result == null || result.Tables.Count == 0 || result.Tables[0].Rows.Count == 0)
+                {
+                    return "";
+                }
+
+                return result.Tables[0].Rows[0]["rfqno"].ToString();
+
+
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "RFQ Save Failed");
+
+                return "";
+            }
+        }
 
         public async Task<IEnumerable<dynamic>?> GetSingleRFQList(string? comcod, string? rfqid)
         {

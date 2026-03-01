@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
@@ -44,6 +45,36 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
 
 
             return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: response.Count() + " Data Found"));
+        }
+
+        /// <summary>
+        /// Save/Update RFQ Information
+        /// </summary>
+        /// <param name="purrfq">This the Post body RFQ Details information</param>     
+        /// <returns>rfq no</returns>
+        [HttpPost("update-requestforquote-details")]
+        public async Task<IActionResult> UpdateRequestForQuoteInformation([FromBody] DtoRFQInf purrfq)
+        {
+            if (purrfq == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "RFQ Details Should Not Null or Empty"));
+            }
+
+            var response = await _purRFQInf.InsertorUpdateRequestForQuoteInfo(purrfq);
+
+            if (response == null)
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                   new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "RFQ Update Failed"));
+
+            if (response == "")
+                return BadRequest(ApiResponse<string>.FailureResponse(
+                   new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "RFQ Update Failed"));
+
+
+            return Ok(ApiResponse<string>.SuccessResponse(response ?? "", message: "RFQ Update Successfully"));
+
+
         }
     }
 }
