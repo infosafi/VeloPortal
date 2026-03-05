@@ -105,6 +105,27 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Vendor
             }
         }
 
+        public async Task<bool> DeleteVendorSuplyById(int supItemId)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                var item = await dbContext.VendorSuply.FindAsync(supItemId);
+
+                if (item == null) return false;
+
+                dbContext.VendorSuply.Remove(item);
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
+            }
+        }
+
         public async Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> supplyItems)
         {
             try

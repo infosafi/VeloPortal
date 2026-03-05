@@ -16,10 +16,12 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
     {
    
         private readonly IPurRFQInf _purRFQInf;
+        private readonly IPurOrderInf _purOrderInf;
 
-        public ProcurementController( IPurRFQInf purRFQInf)
+        public ProcurementController( IPurRFQInf purRFQInf, IPurOrderInf purOrderInf)
         {
             _purRFQInf = purRFQInf;
+            _purOrderInf = purOrderInf;
         }
 
         /// <summary>
@@ -75,6 +77,31 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
             return Ok(ApiResponse<string>.SuccessResponse(response ?? "", message: "RFQ Update Successfully"));
 
 
+        }
+
+        /// <summary>
+        /// Get Purchase Order List Information
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="fromdate">This paramter consider fromdate (such as 01-Oct-2025)</param>
+        /// <param name="todate">This paramter consider todate (such as 30-Oct-2025)</param>
+        /// <param name="supplier">This is lead supplier code. (such as 990100101001)</param>      
+
+        /// <returns>List of Get Order</returns>
+        [HttpGet("get-purchase-order-list")]
+        public async Task<IActionResult> GetPurchaseOrderListInfo(string? comcod, string? fromdate, string? todate, string? supplier)
+        {
+            var response = await _purOrderInf.GetPurchaseOrderList(comcod, fromdate, todate, supplier);
+
+            if (response == null)
+                return NotFound(ApiResponse<dynamic>.FailureResponse(
+                    new List<string> { "Purchase Order List not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: "No Data Found"));
+
+
+            return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: response.Count() + " Data Found"));
         }
     }
 }
