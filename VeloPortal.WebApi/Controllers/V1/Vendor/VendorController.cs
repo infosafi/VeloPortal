@@ -37,6 +37,33 @@ namespace VeloPortal.WebApi.Controllers.V1.Vendor
         }
 
         /// <summary>
+        /// Delete a specific Vendor Supply item.
+        /// </summary>
+        /// <param name="comcod">Company Code</param>
+        /// <param name="rescode">The Item/Resource Code to delete</param>
+        /// <returns>A boolean indicating success or failure</returns>
+        [HttpDelete("delete-supplier-item/{id}")]
+        public async Task<IActionResult> DeleteVendorSupply(int id)
+        {
+            try
+            {
+                var response = await _vendorSuply.DeleteVendorSuplyById(id);
+
+                if (response)
+                {
+                    return Ok(ApiResponse<bool>.SuccessResponse(response, message: "Item deleted successfully"));
+                }
+
+                return NotFound(ApiResponse<bool>.FailureResponse(
+                    new List<string> { "Item not found or already deleted" }, "Delete Failed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.FailureResponse(new List<string> { ex.Message }, "Internal Error"));
+            }
+        }
+
+        /// <summary>
         /// Get Vendor Dashboard counters for quotations, work orders, and supply metrics
         /// </summary>
         /// <param name="comcod">Company code</param>
