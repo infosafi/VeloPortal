@@ -13,7 +13,7 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize]
-    public class CodeBookController(IAccCodeInf _acccodebook, IResCodeInf _rescodeInf) : ControllerBase
+    public class CodeBookController(IAccCodeInf _acccodebook, IResCodeInf _rescodeInf, ISysGenInf _sysGenInf) : ControllerBase
     {
         #region Resource Code Book
         /// <summary>
@@ -132,6 +132,55 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
                 return NotFound(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: "No Data Found"));
 
             return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: ""));
+        }
+        #endregion
+
+        #region Sys Gen Code
+        /// <summary>
+        /// Gets all System General Code List in Velocity System
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="gencod">This the General code, like 0101001.</param>
+        /// <param name="is_active">This the current status of gencode.</param>
+        /// <param name="page_number">This the page number default 1.</param>
+        /// <param name="page_size">This the page size default 10.</param>        
+        /// <param name="groupcodeonly">This the Boolean Paramter indicate Group code or all code, Default is false.</param>        
+        /// 
+        /// <returns>List of System General Code</returns>
+        [HttpGet("get-sys-gen-code")]
+        public async Task<IActionResult> GetCompanyWiseSystemGeneralCodeBookInformation(string? comcod, string? gencod, bool? is_active,
+            int page_number = 0, int page_size = 0, bool groupcodeonly = false)
+        {
+            if (groupcodeonly == true)
+            {
+                var responsegroup = await _sysGenInf.GetSysGenInfGroupCode(comcod);
+
+                if (responsegroup == null)
+                    return NotFound(ApiResponse<SysGenInf>.FailureResponse(
+                        new List<string> { "System General Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+                return Ok(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(responsegroup, message: ""));
+
+            }
+            var response = await _sysGenInf.GetSysGenInfListByStatusAndGenCode(comcod, gencod, is_active);
+
+            if (response == null)
+                return NotFound(ApiResponse<SysGenInf>.FailureResponse(
+                    new List<string> { "System General Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(response, message: "No Data Found"));
+
+
+            int totalcount = response.Count();
+            if (page_size > 0 && page_number > 0)
+            {
+                response = response.Skip((page_number - 1) * page_size).Take(page_size);
+
+            }
+            var pagination = new PaginationMetadata(currentPage: page_number, pageSize: page_size, totalCount: totalcount);
+
+            return Ok(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(response, pagination, message: ""));
         }
         #endregion
     }

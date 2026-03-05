@@ -95,6 +95,7 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IIndustries, IndustriesRepository>();
             services.AddScoped<IResCodeInf, ResCodeInfRepository>();
             services.AddScoped<IAccCodeInf, AccCodeInfRepository>();
+            services.AddScoped<ISysGenInf, SysGenInfRepository>();
             #endregion
 
             #region start Project Management Service add
