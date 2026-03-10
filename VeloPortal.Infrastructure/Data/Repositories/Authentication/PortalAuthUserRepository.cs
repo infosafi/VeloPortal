@@ -306,7 +306,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                if (_spProcessAccess == null) return 0;
 
 
-                DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_CustomerProfile", "Customer",  obj.sup_user_id.ToString(), obj.fullname, obj.suser_email, obj.suser_phone);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_CustomerProfile", "Customer",  obj.sup_user_id.ToString(), obj.fullname, obj.user_role, obj.suser_email, obj.suser_phone);
 
                 return ds != null ? obj.sup_user_id : 0;
             }
