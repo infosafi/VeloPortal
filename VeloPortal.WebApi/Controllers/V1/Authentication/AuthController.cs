@@ -207,19 +207,24 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// </summary>
         [HttpPost("update-customer-profile")]
         [Authorize]
-        public async Task<IActionResult> UpdateCustomerProfile(SupportUser dto)
+        public async Task<IActionResult> UpdateCustomerProfile(DtoCustomer dto)
         {
-            if (dto == null || dto.sup_user_id == 0)
-                return BadRequest(new { Success = false, message = "Invalid profile data." });
 
-            long resultId = await _userRepo.InsertOrUpdateCustomer(dto, HelperEnums.Action.Update.ToString());
+            if (dto == null || dto.sup_user_id == 0)
+                return BadRequest(new { Success = false, message = "Invalid profile data. User ID is required." });
+
+
+            if (string.IsNullOrEmpty(dto.user_role))
+                return BadRequest(new { Success = false, message = "User role is required for routing." });
+
+            long resultId = await _userRepo.InsertOrUpdateCustomer(dto);
 
             if (resultId > 0)
             {
                 return Ok(new { Success = true, message = "Profile updated successfully!", id = resultId });
             }
 
-            return StatusCode(500, new { Success = false, message = "Failed to update profile." });
+            return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
 
         //[HttpPost("refresh")]

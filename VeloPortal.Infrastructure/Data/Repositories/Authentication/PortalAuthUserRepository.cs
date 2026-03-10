@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Settings;
@@ -298,50 +299,20 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-        public async Task<long> InsertOrUpdateCustomer(SupportUser obj, string action)
+        public async Task<long> InsertOrUpdateCustomer(DtoCustomer obj)
         {
             try
             {
-                using (var dbContext = _dbContextFactory.CreateDbContext())
-                {
-                    if (action == HelperEnums.Action.Add.ToString())
-                    {
+               if (_spProcessAccess == null) return 0;
 
 
-                        await dbContext.SupportUsers.AddAsync(obj);
-                    }
-                    else
-                    {
+                DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_CustomerProfile", obj.sup_user_id.ToString(), obj.fullname, obj.suser_email, obj.suser_phone);
 
-                        var existingCustomer = await dbContext.SupportUsers
-                            .FirstOrDefaultAsync(v => v.sup_user_id == obj.sup_user_id);
-
-                        if (existingCustomer == null)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"ERROR: Vendor with ID {obj.sup_user_id} not found");
-                            return 0;
-                        }
-
-                        existingCustomer.fullname = obj.fullname;
-                        existingCustomer.username = obj.username;
-                        existingCustomer.suser_email = obj.suser_email;
-                        existingCustomer.suser_phone = obj.suser_phone;
-
-                    }
-
-                    await dbContext.SaveChangesAsync();
-                    return obj.sup_user_id;
-                }
+                return ds != null ? obj.sup_user_id : 0;
             }
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
-                System.Diagnostics.Debug.WriteLine($"ERROR in InsertOrUpdateVendor: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
                 return 0;
             }
         }
