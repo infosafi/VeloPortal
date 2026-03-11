@@ -8,6 +8,7 @@
         public string fullname { get; set; }
         public string username { get; set; }
         public string suser_email { get; set; }
+        public string cust_address { get; set; }
         public string suser_phone { get; set; }
         public string secondary_contact { get; set; }
         public string tertiary_contact { get; set; }
