@@ -124,24 +124,24 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-        public async Task<SupportUser?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email)
+        public async Task<DtoCustomer?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email)
         {
 
             try
             {
                 if (_spProcessAccess == null)
                 {
-                    return await Task.FromResult<SupportUser?>(null);
+                    return await Task.FromResult<DtoCustomer?>(null);
                 }
 
                 DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_CustomerProfile", user_type, cust_email);
 
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
-                    return await Task.FromResult<SupportUser?>(null);
+                    return await Task.FromResult<DtoCustomer?>(null);
                 }
 
-                var userList = ds.Tables[0].DataTableToList<SupportUser>();
+                var userList = ds.Tables[0].DataTableToList<DtoCustomer>();
                 var user = userList?.FirstOrDefault();
 
                 return await Task.FromResult(user);
@@ -149,7 +149,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
-                return await Task.FromResult<SupportUser?>(null);
+                return await Task.FromResult<DtoCustomer?>(null);
             }
         }
 
