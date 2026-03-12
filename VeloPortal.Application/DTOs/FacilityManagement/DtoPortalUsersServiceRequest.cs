@@ -14,5 +14,6 @@
         public bool is_done { get; set; }
         public bool onprocess { get; set; }
         public DateTime est_done_date { get; set; }
+        public bool seq { get; set; }
     }
 }
