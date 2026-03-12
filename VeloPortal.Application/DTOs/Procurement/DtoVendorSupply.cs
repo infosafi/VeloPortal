@@ -1,6 +1,6 @@
-﻿namespace VeloPortal.Application.DTOs.Vendor
+﻿namespace VeloPortal.Application.DTOs.Procurement
 {
-    public class DtoVendorSuply
+    public class DtoVendorSupply
     {
         public long sup_item_id { get; set; }
         public string? comcod { get; set; }
