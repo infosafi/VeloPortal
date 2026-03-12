@@ -1,5 +1,4 @@
-﻿using VeloPortal.Application.DTOs.ServiceRequest;
-using VeloPortal.Application.DTOs.Vendor;
+﻿using VeloPortal.Application.DTOs.Vendor;
 using VeloPortal.Domain.Entities.Vendor;
 
 namespace VeloPortal.Application.Interfaces.Vendor

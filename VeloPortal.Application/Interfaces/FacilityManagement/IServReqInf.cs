@@ -1,4 +1,4 @@
-﻿using VeloPortal.Application.DTOs.ServiceRequest;
+﻿using VeloPortal.Application.DTOs.FacilityManagement;
 using VeloPortal.Domain.Entities.FacilityManagement;
 
 namespace VeloPortal.Application.Interfaces.FacilityManagement

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VeloPortal.Application.DTOs.Common;
+﻿using VeloPortal.Application.DTOs.Authentication;
 
 namespace VeloPortal.Application.Interfaces.Common
 {

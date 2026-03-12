@@ -1,4 +1,4 @@
-﻿namespace VeloPortal.Application.DTOs.ServiceRequest
+﻿namespace VeloPortal.Application.DTOs.FacilityManagement
 {
     public class DtoPublicServiceRequestDetails
     {

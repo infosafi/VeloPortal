@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Authentication;
-using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;

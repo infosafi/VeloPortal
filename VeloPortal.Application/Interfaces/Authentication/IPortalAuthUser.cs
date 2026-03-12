@@ -1,5 +1,4 @@
 ﻿using VeloPortal.Application.DTOs.Authentication;
-using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Domain.Entities.Authentication;
 
 namespace VeloPortal.Application.Interfaces.Authentication
