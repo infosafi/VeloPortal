@@ -122,6 +122,7 @@ namespace VeloPortal.WebApi.Extensions
             #endregion
 
             #region Procurement Service add
+            services.AddScoped<ISupplierInf, SupplierInfRepository>();
             services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
