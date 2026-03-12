@@ -135,5 +135,30 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             }
         }
 
+        public async Task<IEnumerable<DtoPeriodicRfqlist>?> GetPeriodicRfqlist(string? comcod, string? rescode)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoPeriodicRfqlist>?>(null);
+                }
+                IEnumerable<DtoPeriodicRfqlist>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_PROCUREMENT_MGT", "Get_Periodic_Rfq_list", "", "", "", "true", rescode!);
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoPeriodicRfqlist>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoPeriodicRfqlist>();
+                return await Task.FromResult<IEnumerable<DtoPeriodicRfqlist>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoPeriodicRfqlist>?>(null);
+            }
+        }
+
     }
 }

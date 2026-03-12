@@ -1,12 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace VeloPortal.Domain.Entities.Vendor
+namespace VeloPortal.Domain.Entities.Procurement
 {
     [Table("VendorSuply", Schema = "itv_scm")]
     [PrimaryKey(nameof(sup_item_id))]
@@ -31,7 +26,7 @@ namespace VeloPortal.Domain.Entities.Vendor
         public int lead_time { get; set; }
         public DateTime created_date { get; set; }
 
-        public VendorSuply() {}
+        public VendorSuply() { }
         public VendorSuply(long sup_item_id_, string comcod_, string rescode_, string spcfcode_, string refid_, decimal rate_, long currency_id_, decimal currency_rate_, string remarks_, bool is_audit_, DateTime audit_date_, int audit_by_, int num_of_client_, decimal num_of_experience_, string medium_, int lead_time_, DateTime created_date_)
         {
             this.sup_item_id = sup_item_id_;

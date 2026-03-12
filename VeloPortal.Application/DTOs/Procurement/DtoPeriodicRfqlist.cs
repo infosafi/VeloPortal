@@ -1,4 +1,4 @@
-﻿namespace VeloPortal.Application.DTOs.Vendor
+﻿namespace VeloPortal.Application.DTOs.Procurement
 {
     public class DtoPeriodicRfqlist
     {
