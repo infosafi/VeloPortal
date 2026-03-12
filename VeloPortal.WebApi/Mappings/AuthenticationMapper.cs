@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using VeloPortal.Application.DTOs.Common;
 
 namespace VeloPortal.WebApi.Mappings
 {

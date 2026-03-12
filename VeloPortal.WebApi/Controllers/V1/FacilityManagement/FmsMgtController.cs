@@ -1,8 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using VeloPortal.Application.DTOs.ServiceRequest;
-using VeloPortal.Application.Interfaces.Complain;
+using VeloPortal.Application.DTOs.FacilityManagement;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.FacilityManagement;

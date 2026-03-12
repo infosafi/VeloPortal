@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using VeloPortal.Application.DTOs.Authentication;
-using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Authentication;
