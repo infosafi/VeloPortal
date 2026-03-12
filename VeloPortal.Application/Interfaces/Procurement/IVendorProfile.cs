@@ -1,4 +1,5 @@
 ﻿using VeloPortal.Application.DTOs.Procurement;
+using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Procurement;
 
 namespace VeloPortal.Application.Interfaces.Procurement
@@ -7,5 +8,7 @@ namespace VeloPortal.Application.Interfaces.Procurement
     {
         Task<bool> SaveVendorSuply(IEnumerable<VendorSuply> vendorSuply);
         Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod);
+        Task<VendorProfile?> FindUserByVendorEmailAsync(string comcod, string user_type, string vendor_email);
+        Task<VendorProfile> InsertOrUpdateVendor(VendorProfile obj, string action);
     }
 }

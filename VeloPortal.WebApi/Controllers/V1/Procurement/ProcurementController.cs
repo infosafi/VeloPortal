@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Procurement;
+using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 
 namespace VeloPortal.WebApi.Controllers.V1.Procurement
@@ -25,6 +27,48 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
             _purRFQInf = purRFQInf;
             _purOrderInf = purOrderInf;
             _vendorprofile = vendorprofile;
+        }
+
+        /// <summary>
+        /// Retrieves the full profile of a vendor by email.
+        /// </summary>
+        [HttpGet("get-vendor-profile")]
+        public async Task<IActionResult> GetVendorProfile(string comcod, string vendor_email)
+        {
+            var user = await _vendorprofile.FindUserByVendorEmailAsync(comcod, "Vendor", vendor_email);
+            if (user == null)
+                return NotFound(new { Success = false, message = "Profile not found." });
+
+            return Ok(new { Success = true, data = user });
+        }
+
+        /// <summary>
+        /// Updates the vendor profile details.
+        /// </summary>
+        [HttpPost("update-vendor-profile")]
+
+        public async Task<IActionResult> UpdateVendorProfile(VendorProfile dto)
+        {
+            if (dto.vendor_profile_id == 0)
+            {
+                var result = await _vendorprofile.InsertOrUpdateVendor(dto, HelperEnums.Action.Add.ToString());
+
+                if (result == null)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
+                }
+
+                return Ok(ApiResponse<dynamic>.SuccessResponse(result, message: "Profile updated successfully!"));
+            }
+
+            var updatedResult = await _vendorprofile.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
+
+            if (updatedResult == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
+            }
+
+            return Ok(ApiResponse<VendorProfile>.SuccessResponse(updatedResult, message: "Profile updated successfully"));
         }
 
         /// <summary>
