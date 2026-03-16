@@ -83,17 +83,12 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     return null;
                 }
 
-                IEnumerable<dynamic>? purOrderInfo = ds.Tables[0].DataTableToDynamicList();
-                IEnumerable<dynamic>? purOrderItems = ds.Tables[1].DataTableToDynamicList();
-                IEnumerable<dynamic>? purOrderSchedule = ds.Tables[2].DataTableToDynamicList();
-                IEnumerable<dynamic>? purOrderDoc = ds.Tables[3].DataTableToDynamicList();
-
                 var resultDto = new DtoPurOrderInfo
                 {
-                    PurOrderInfo = purOrderInfo,
-                    PurOrderItems = purOrderItems,
-                    PurOrderSchedule = purOrderSchedule,
-                    PurOrderDoc = purOrderDoc
+                    PurOrderInfo = ds.Tables[0].DataTableToList<PurOrderInfo>(),
+                    PurOrderItems = ds.Tables[1].DataTableToList<PurOrderItem>(),
+                    PurOrderSchedule = ds.Tables[2].DataTableToList<PurOrderSchedule>(),
+                    PurOrderDoc = ds.Tables[3].DataTableToList<PurOrderDoc>()
                 };
 
                 return resultDto;
