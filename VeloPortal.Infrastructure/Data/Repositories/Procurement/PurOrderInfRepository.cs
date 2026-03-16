@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
@@ -60,5 +61,51 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                 return await Task.FromResult<IEnumerable<dynamic>?>(null);
             }
         }
+
+
+        public async Task<DtoPurOrderInfo?> GetPurchaseOrderInfo(string? comcod, string? pur_ord_id, string? orderno)
+        {
+            try
+            {
+                await Task.Delay(1);
+
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
+                    return null;
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_PROCUREMENT_MGT", "Get_Purchase_Order_Info", pur_ord_id ?? "", orderno ?? "");
+
+                if (ds == null || ds.Tables.Count < 4)
+                {
+                    _logger.LogWarning($"SP 'Get_Purchase_Order_Info' returned fewer than 4 tables for order: {orderno}");
+                    return null;
+                }
+
+                IEnumerable<dynamic>? purOrderInfo = ds.Tables[0].DataTableToDynamicList();
+                IEnumerable<dynamic>? purOrderItems = ds.Tables[1].DataTableToDynamicList();
+                IEnumerable<dynamic>? purOrderSchedule = ds.Tables[2].DataTableToDynamicList();
+                IEnumerable<dynamic>? purOrderDoc = ds.Tables[3].DataTableToDynamicList();
+
+                var resultDto = new DtoPurOrderInfo
+                {
+                    PurOrderInfo = purOrderInfo,
+                    PurOrderItems = purOrderItems,
+                    PurOrderSchedule = purOrderSchedule,
+                    PurOrderDoc = purOrderDoc
+                };
+
+                return resultDto;
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Purchase Order Information Failed to Retrive");
+                return null;
+            }
+        }
+
     }
 }

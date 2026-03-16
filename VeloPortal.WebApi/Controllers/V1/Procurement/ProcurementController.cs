@@ -216,5 +216,36 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
 
             return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: response.Count() + " Data Found"));
         }
+
+        /// <summary>
+        /// Get purchase order details information by given pur_ord_id and orderno.
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="pur_ord_id">This paramter is for purchase id, such like 1</param> 
+        /// <param name="orderno">This paramter is for orderno, such like POR20250200001</param> 
+        /// <returns>Purchase Details Infomation</returns>
+        [HttpGet("get-purchase-order-info")]
+
+        public async Task<IActionResult> GetPurchaseOrderInformation(string? comcod, string? pur_ord_id, string? orderno)
+        {
+            if (pur_ord_id == null || orderno == null)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "Leads Id Should not Empty or null"));
+            }
+            var response = await _purOrderInf.GetPurchaseOrderInfo(comcod, pur_ord_id, orderno);
+
+            if (response == null)
+                return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Purchase Details info not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            int leadCount = response.PurOrderInfo?.Count() ?? 0;
+
+            if (leadCount == 0)
+                return NotFound(ApiResponse<DtoPurOrderInfo>.SuccessResponse(response, message: "No Purchase Information found for the given ID."));
+
+
+            return Ok(ApiResponse<DtoPurOrderInfo>.SuccessResponse(response, message: $"Purchase details loaded successfully. (Data Found: {leadCount})"));
+
+        }
+
     }
 }
