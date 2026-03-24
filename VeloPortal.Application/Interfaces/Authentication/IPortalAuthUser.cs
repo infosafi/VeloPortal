@@ -1,4 +1,4 @@
-﻿using VeloPortal.Application.DTOs.Common;
+﻿using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Domain.Entities.Authentication;
 
 namespace VeloPortal.Application.Interfaces.Authentication
@@ -7,10 +7,8 @@ namespace VeloPortal.Application.Interfaces.Authentication
     {
         Task<DtoUserInf?> ValidateCredentialsAsync(string comcod, string user_type, string user_or_email, string password);
         Task<DtoUserInf?> FindUserByEmailOrPhoneAsync(string comcod, string user_type, string user_or_email);
-        Task<VendorProfile?> FindUserByVendorEmailAsync(string comcod, string user_type, string vendor_email);
-        Task<SupportUser?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email);
-        Task<VendorProfile> InsertOrUpdateVendor(VendorProfile obj, string action);
-        Task<long> InsertOrUpdateCustomer(SupportUser obj, string action);
+        Task<DtoCustomer?> FindUserByCustomerEmailAsync(string comcod, string user_type, string cust_email);
+        Task<long> InsertOrUpdateCustomer(DtoCustomer obj);
         Task<bool> UpdatePasswordAsync(string comcod, string user_type, string userId, string new_password, string portal_role);
     }
 }

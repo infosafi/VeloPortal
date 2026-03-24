@@ -3,20 +3,20 @@ using Microsoft.EntityFrameworkCore;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
+using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Interfaces.ProjectManagement;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Interfaces.SystemConfig;
-using VeloPortal.Application.Interfaces.Vendor;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
 using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
+using VeloPortal.Infrastructure.Data.Repositories.Procurement;
 using VeloPortal.Infrastructure.Data.Repositories.ProjectManagement;
 using VeloPortal.Infrastructure.Data.Repositories.Sales;
 using VeloPortal.Infrastructure.Data.Repositories.SystemConfig;
-using VeloPortal.Infrastructure.Data.Repositories.Vendor;
 using VeloPortal.Infrastructure.Service;
 
 namespace VeloPortal.WebApi.Extensions
@@ -92,6 +92,7 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IIndustries, IndustriesRepository>();
             services.AddScoped<IResCodeInf, ResCodeInfRepository>();
             services.AddScoped<IAccCodeInf, AccCodeInfRepository>();
+            services.AddScoped<ISysGenInf, SysGenInfRepository>();
             #endregion
 
             #region start Project Management Service add
@@ -117,7 +118,13 @@ namespace VeloPortal.WebApi.Extensions
             #endregion
 
             #region start Vendor add
-            services.AddScoped<IVendorSuply, VendorSuplyRepository>();
+            services.AddScoped<IVendorProfile, VendorRepository>();
+            #endregion
+
+            #region Procurement Service add
+            services.AddScoped<ISupplierInf, SupplierInfRepository>();
+            services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
+            services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
             return services;
         }

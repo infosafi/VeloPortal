@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
-using VeloPortal.Application.DTOs.ServiceRequest;
+using VeloPortal.Application.DTOs.FacilityManagement;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.FacilityManagement;

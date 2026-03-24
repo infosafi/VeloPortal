@@ -4,7 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using VeloPortal.Application.DTOs.Common;
+using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;
 

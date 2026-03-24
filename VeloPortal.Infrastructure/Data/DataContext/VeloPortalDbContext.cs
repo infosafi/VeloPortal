@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
+using VeloPortal.Domain.Entities.Procurement;
 using VeloPortal.Domain.Entities.SystemConfig;
-using VeloPortal.Domain.Entities.Vendor;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
 {
@@ -18,6 +18,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region System configuration
         public DbSet<ResCodeInf> ResCodeInf { get; set; }
+        public DbSet<SysGenInf> SysGenInf { get; set; }
         public DbSet<Industries> Industries { get; set; }
         #endregion
         #region Authentication

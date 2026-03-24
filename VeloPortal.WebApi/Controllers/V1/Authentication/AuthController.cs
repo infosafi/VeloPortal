@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Authentication;
-using VeloPortal.Application.DTOs.Common;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Common;
+using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Enums;
@@ -22,14 +22,16 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         private readonly IRefreshTokenService _refreshRepo;
         private readonly IPortalAuthUser _userRepo;
         private readonly IPassRecovery _passRecovery;
+        private readonly IVendorProfile _vendorprofile;
 
         public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo,
-            IPortalAuthUser userRepo, IPassRecovery passRecovery)
+            IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile)
         {
             _jwtService = jwtService;
             _refreshRepo = refreshRepo;
             _userRepo = userRepo;
             _passRecovery = passRecovery;
+            _vendorprofile = vendorprofile;
         }
 
 
@@ -128,7 +130,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     is_audit = false
                 };
 
-                var result = await _userRepo.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+                var result = await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
                 
                 if (result == null)
                 {
@@ -143,49 +145,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { Success = false, message = "An error occurred during signup.", detail = ex.Message });
             }
-        }
-
-        /// <summary>
-        /// Retrieves the full profile of a vendor by email.
-        /// </summary>
-        [HttpGet("get-vendor-profile")]
-        [Authorize]
-        public async Task<IActionResult> GetVendorProfile(string comcod, string vendor_email)
-        {
-            var user = await _userRepo.FindUserByVendorEmailAsync(comcod, "Vendor", vendor_email);
-            if (user == null)
-                return NotFound(new { Success = false, message = "Profile not found." });
-
-            return Ok(new { Success = true, data = user });
-        }
-
-        /// <summary>
-        /// Updates the vendor profile details.
-        /// </summary>
-        [HttpPost("update-vendor-profile")]
-        [Authorize]
-        public async Task<IActionResult> UpdateVendorProfile(VendorProfile dto)
-        {
-            if (dto.vendor_profile_id == 0)
-            {
-                var result = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Add.ToString());
-
-                if (result == null)
-                {
-                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
-                }
-
-                return Ok(ApiResponse<dynamic>.SuccessResponse(result, message: "Profile updated successfully!"));
-            }
-
-            var updatedResult = await _userRepo.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
-
-            if (updatedResult == null)
-            {
-                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
-            }
-
-            return Ok(ApiResponse<VendorProfile>.SuccessResponse(updatedResult, message: "Profile updated successfully"));
         }
 
         /// <summary>
@@ -207,19 +166,24 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// </summary>
         [HttpPost("update-customer-profile")]
         [Authorize]
-        public async Task<IActionResult> UpdateCustomerProfile(SupportUser dto)
+        public async Task<IActionResult> UpdateCustomerProfile(DtoCustomer dto)
         {
-            if (dto == null || dto.sup_user_id == 0)
-                return BadRequest(new { Success = false, message = "Invalid profile data." });
 
-            long resultId = await _userRepo.InsertOrUpdateCustomer(dto, HelperEnums.Action.Update.ToString());
+            if (dto == null || dto.sup_user_id == 0)
+                return BadRequest(new { Success = false, message = "Invalid profile data. User ID is required." });
+
+
+            if (string.IsNullOrEmpty(dto.user_role))
+                return BadRequest(new { Success = false, message = "User role is required for routing." });
+
+            long resultId = await _userRepo.InsertOrUpdateCustomer(dto);
 
             if (resultId > 0)
             {
                 return Ok(new { Success = true, message = "Profile updated successfully!", id = resultId });
             }
 
-            return StatusCode(500, new { Success = false, message = "Failed to update profile." });
+            return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
 
         //[HttpPost("refresh")]
