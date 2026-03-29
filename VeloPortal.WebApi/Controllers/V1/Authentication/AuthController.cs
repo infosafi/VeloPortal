@@ -7,6 +7,7 @@ using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.SystemConfig;
 using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.WebApi.Helpers;
@@ -85,6 +86,20 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             });
         }
 
+        [HttpGet("get-company-list")]
+        public async Task<IActionResult> GetAllCompanyInfoList(bool? is_active)
+        {
+            var response = await _userRepo.GetCompanyInfoListByStatus(is_active);
+
+            if (response == null)
+                return NotFound(ApiResponse<ModuleInf>.FailureResponse(
+                    new List<string> { "Company not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<CompanyInf>>.SuccessResponse(response, message: "No Data Found"));
+
+            return Ok(ApiResponse<IEnumerable<CompanyInf>>.SuccessResponse(response, message: ""));
+        }
 
         /// <summary>
         /// Registers a new vendor into the portal.
