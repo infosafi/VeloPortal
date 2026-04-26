@@ -26,6 +26,8 @@ namespace VeloPortal.Application.DTOs.Procurement
         public string sup_address { get; set; }
         public string sup_phone { get; set; }
         public decimal advance_amt { get; set; }
+        public decimal vatamt { get; set; } 
+        public decimal taxamt { get; set; }
         public string narration { get; set; }
         public string inco_terms { get; set; }
         public string payment_mode { get; set; }

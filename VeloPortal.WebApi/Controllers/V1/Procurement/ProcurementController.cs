@@ -80,9 +80,9 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
         /// <returns>A collection of dashboard metrics including quotation counts and order amounts</returns>
 
         [HttpGet("get-vendor-dashboard-counter")]
-        public async Task<IActionResult> GetVendorDashboardCounter(string? comcod)
+        public async Task<IActionResult> GetVendorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code)
         {
-            var response = await _vendorprofile.GetVendorDashboardCounter(comcod);
+            var response = await _vendorprofile.GetVendorDashboardCounter(comcod, user_role, user_id, res_code);
 
             if (response == null)
                 return NotFound(ApiResponse<string>.FailureResponse(

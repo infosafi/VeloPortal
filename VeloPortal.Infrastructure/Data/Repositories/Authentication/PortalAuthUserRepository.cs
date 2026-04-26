@@ -5,8 +5,7 @@ using System.Data;
 using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Settings;
-using VeloPortal.Domain.Entities.Authentication;
-using VeloPortal.Domain.Enums;
+using VeloPortal.Domain.Entities.SystemConfig;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
@@ -21,17 +20,17 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         private readonly IConfiguration _configuration;
         private readonly ILogger<ServReqInfRepository> _logger;
         private readonly SPProcessAccess? _spProcessAccess;
-
+  
 
         public PortalAuthUserRepository(
           IDbContextFactory<VeloPortalDbContext> dbContextFactory,
-         ILogger<ServReqInfRepository> logger,
-          IConfiguration configuration)
+          ILogger<ServReqInfRepository> logger,
+          IConfiguration configuration
+            )
         {
             _dbContextFactory = dbContextFactory;
             _logger = logger;
             _configuration = configuration;
-
 
             var connectionString = _configuration.GetConnectionString(DefaultSettings.DefaultDbconnection);
             _spProcessAccess = new SPProcessAccess(connectionString);
@@ -62,6 +61,30 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<DtoUserInf?>(null);
+            }
+        }
+
+        public async Task<IEnumerable<CompanyInf>?> GetCompanyInfoListByStatus(bool? is_active)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    var query = dbContext.CompanyInf.AsNoTracking().AsQueryable();
+
+
+                    if (is_active.HasValue)
+                        query = query.Where(p => p.is_active == is_active.Value);
+
+                    return await query.ToListAsync();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Currency Retrival Failed");
+                return null;
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using VeloPortal.Domain.Entities.AccountsFinance;
 using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
@@ -19,6 +20,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #region System configuration
         public DbSet<ResCodeInf> ResCodeInf { get; set; }
         public DbSet<SysGenInf> SysGenInf { get; set; }
+        public DbSet<CompanyInf> CompanyInf { get; set; }
         public DbSet<Industries> Industries { get; set; }
         #endregion
         #region Authentication
@@ -26,7 +28,9 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         public DbSet<VendorProfile> VendorProfile { get; set; }
         public DbSet<SupportUser> SupportUsers { get; set; }
         #endregion
-
+        #region AccountsFinance
+        public DbSet<FinCompReq> FinCompReq { get; set; }
+        #endregion
         #region Common       
 
         #endregion
