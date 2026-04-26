@@ -9,9 +9,7 @@
     public enum DtoFinCompReqAction
     {
         Save,
-        Update,
-        Approve,
-        Cancel
+        Update
     }
     public class DtoFinCompReqRequest
     {
@@ -30,14 +28,8 @@
         public string? ReqSource { get; set; }
 
         public DateTime? ReqDate { get; set; }
-
-        public DateTime? DeliveryBefore { get; set; }
-
         public string? Remarks { get; set; }
-
         public List<string>? ReqTypes { get; set; }
-
-        public string? ReviewNote { get; set; }
         public int? UserId { get; set; }
     }
     public class DtoFinCompReqDetails
