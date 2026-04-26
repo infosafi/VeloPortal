@@ -121,7 +121,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.AccountsFinance
                         remarks = request.Remarks ?? string.Empty,
                         delivery_before = SqlSmallDateTimeMin,
                         created_date = now,
-                        created_by = userId,
+                        created_by = 0,
                         is_cancel = false,
                         is_approved = false,
                         review_note = string.Empty,
