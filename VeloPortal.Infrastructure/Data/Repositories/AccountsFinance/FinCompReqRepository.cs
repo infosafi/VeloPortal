@@ -119,7 +119,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.AccountsFinance
                         reqtype = reqType,
                         reqdate = reqDate,
                         remarks = request.Remarks ?? string.Empty,
-                        delivery_before = request.DeliveryBefore ?? SqlSmallDateTimeMin,
+                        delivery_before = SqlSmallDateTimeMin,
                         created_date = now,
                         created_by = userId,
                         is_cancel = false,
@@ -187,7 +187,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.AccountsFinance
                 if (request.ReqSource is not null) entity.req_source = request.ReqSource;
                 if (request.Remarks is not null) entity.remarks = request.Remarks;
                 if (request.ReqDate.HasValue) entity.reqdate = request.ReqDate.Value;
-                if (request.DeliveryBefore.HasValue) entity.delivery_before = request.DeliveryBefore ?? SqlSmallDateTimeMin;
+ 
 
                 if (request.ReqTypes is { Count: 1 })
                     entity.reqtype = request.ReqTypes[0];
@@ -211,117 +211,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.AccountsFinance
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // APPROVE
-        // ─────────────────────────────────────────────────────────────────────
-        public async Task<ApiResponse<DtoFinCompReqResponse>> ApproveAsync(DtoFinCompReqRequest request)
-        {
-            if (request.FinCompReqId == null)
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "fin_comp_req_id is required for Approve.");
-
-            if (string.IsNullOrWhiteSpace(request.ReviewNote))
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "review_note is required when approving a request.");
-
-            try
-            {
-                await using var db = await _dbContextFactory.CreateDbContextAsync();
-
-                var entity = await db.FinCompReq
-                    .FirstOrDefaultAsync(x => x.fin_comp_req_id == request.FinCompReqId);
-
-                if (entity is null)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        $"Record with id {request.FinCompReqId} not found.");
-
-                if (entity.is_cancel)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        "Cannot approve a cancelled request.");
-
-                if (entity.is_approved)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        "Request is already approved.");
-
-                entity.is_approved = true;
-                entity.review_note = request.ReviewNote;
-                entity.review_date = DateTime.UtcNow;
-                entity.review_by = request.UserId ?? 0;
-
-                await db.SaveChangesAsync();
-
-                return ApiResponse<DtoFinCompReqResponse>.SuccessResponse(
-                    new DtoFinCompReqResponse
-                    {
-                        AffectedIds = new List<long> { entity.fin_comp_req_id },
-                        AffectedFcrNo = new List<string> { entity.fcrno },
-                        Detail = $"Request {entity.fcrno} approved successfully."
-                    },
-                    "Financial Compliance Request approved.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in ApproveAsync for id={Id}", request.FinCompReqId);
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "An unexpected error occurred while approving the request.");
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // CANCEL
-        // ─────────────────────────────────────────────────────────────────────
-        public async Task<ApiResponse<DtoFinCompReqResponse>> CancelAsync(DtoFinCompReqRequest request)
-        {
-            if (request.FinCompReqId == null)
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "fin_comp_req_id is required for Cancel.");
-
-            if (string.IsNullOrWhiteSpace(request.ReviewNote))
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "review_note is required when cancelling a request.");
-
-            try
-            {
-                await using var db = await _dbContextFactory.CreateDbContextAsync();
-
-                var entity = await db.FinCompReq
-                    .FirstOrDefaultAsync(x => x.fin_comp_req_id == request.FinCompReqId);
-
-                if (entity is null)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        $"Record with id {request.FinCompReqId} not found.");
-
-                if (entity.is_cancel)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        "Request is already cancelled.");
-
-                if (entity.is_approved)
-                    return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                        "Cannot cancel an already approved request.");
-
-                entity.is_cancel = true;
-                entity.review_note = request.ReviewNote;
-                entity.review_date = DateTime.UtcNow;
-                entity.review_by = request.UserId ?? 0;
-
-                await db.SaveChangesAsync();
-
-                return ApiResponse<DtoFinCompReqResponse>.SuccessResponse(
-                    new DtoFinCompReqResponse
-                    {
-                        AffectedIds = new List<long> { entity.fin_comp_req_id },
-                        AffectedFcrNo = new List<string> { entity.fcrno },
-                        Detail = $"Request {entity.fcrno} cancelled successfully."
-                    },
-                    "Financial Compliance Request cancelled.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in CancelAsync for id={Id}", request.FinCompReqId);
-                return ApiResponse<DtoFinCompReqResponse>.FailureResponse(
-                    "An unexpected error occurred while cancelling the request.");
-            }
-        }
         // ─────────────────────────────────────────────────────────────────────
         // GET FIN COMP DETAILS
         // ─────────────────────────────────────────────────────────────────────
