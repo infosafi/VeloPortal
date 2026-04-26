@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using VeloPortal.Application.Interfaces.AccountsFinance;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
@@ -10,6 +11,7 @@ using VeloPortal.Application.Interfaces.SystemConfig;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
+using VeloPortal.Infrastructure.Data.Repositories.AccountsFinance;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
 using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
@@ -107,6 +109,10 @@ namespace VeloPortal.WebApi.Extensions
             #region start Authentication Service add
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
             services.AddScoped<IPassRecovery, PassRecoveryRepository>();
+            #endregion
+
+            #region start AcccountsFinance Service add
+            services.AddScoped<IFinCompReq, FinCompReqRepository>();
             #endregion
 
             #region Documentation Service add
