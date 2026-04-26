@@ -298,7 +298,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
                         <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
                             <tr>
-                                <td class=""bg-primary"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
+                                <td class=""bg-warning"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
                                     <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
                                 </td>
                             </tr>
@@ -550,7 +550,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
                         <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
                             <tr>
-                                <td class=""bg-primary"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
+                                <td class=""bg-warning"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
                                     <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
                                 </td>
                             </tr>
