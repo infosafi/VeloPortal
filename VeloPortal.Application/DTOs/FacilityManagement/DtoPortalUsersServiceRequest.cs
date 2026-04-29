@@ -1,0 +1,19 @@
+﻿namespace VeloPortal.Application.DTOs.FacilityManagement
+{
+    public class DtoPortalUsersServiceRequest
+    {
+        public string? comcod { get; set; }
+        public string service_no { get; set; } = String.Empty;
+        public string unitcode { get; set; } = String.Empty;
+        public string unitname { get; set; } = String.Empty;
+        public long service_req_id { get; set; }
+        public DateTime service_req_date { get; set; }
+        public string complain_details { get; set; } = String.Empty;
+        public string current_step { get; set; } = String.Empty;
+        public string current_stepdesc { get; set; } = String.Empty;
+        public bool is_done { get; set; }
+        public bool onprocess { get; set; }
+        public DateTime est_done_date { get; set; }
+        public int seq { get; set; }
+    }
+}

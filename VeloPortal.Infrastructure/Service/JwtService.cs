@@ -1,27 +1,23 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using VeloPortal.Application.DTOs.Common;
+using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Settings;
 
-namespace VeloPortal.Infrastructure.Data.Repositories.Common
+namespace VeloPortal.Infrastructure.Service
 {
-    public class JwtRepository : IJwtService
+    public class JwtService : IJwtService
     {
         private readonly JwtSettings _settings;
-        public JwtRepository(IOptions<JwtSettings> settings)
+        public JwtService(IOptions<JwtSettings> settings)
         {
             _settings = settings.Value;
         }
-        public string GenerateAccessToken(DtoPortalUser? user)
+        public string GenerateAccessToken(DtoUserInf? user)
         {
             if (user == null)
             {
@@ -32,10 +28,10 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Common
             {
                 var claims = new[]
              {
-            new Claim(JwtRegisteredClaimNames.Sub, user.user_id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.unq_id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.user_email??""),
-            new Claim(JwtRegisteredClaimNames.Name, user.full_name??"")
+            new Claim(JwtRegisteredClaimNames.Name, user.username??"")
         };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret ?? ""));

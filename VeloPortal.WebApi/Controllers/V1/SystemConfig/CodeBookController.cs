@@ -1,0 +1,187 @@
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using VeloPortal.Application.DTOs.SystemConfig;
+using VeloPortal.Application.Interfaces.SystemConfig;
+using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.SystemConfig;
+using VeloPortal.Domain.Extensions;
+
+namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
+{
+    [ApiVersion("1.0")]
+    [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [Authorize]
+    public class CodeBookController(IAccCodeInf _acccodebook, IResCodeInf _rescodeInf, ISysGenInf _sysGenInf) : ControllerBase
+    {
+        #region Resource Code Book
+        /// <summary>
+        /// Gets List of Resources Code Book
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="rescode">This the Resource code, like 010100101001.</param>
+        /// <param name="is_active">This the current status of Resource code.</param>      
+        /// <param name="groupcodeonly">This the Boolean Paramter indicate Group code or all code, Default is false.</param>        
+        /// 
+        /// <returns>List of Resources Code Book</returns>
+        [HttpGet("get-res-code-book")]
+        public async Task<IActionResult> GetResourseCodeBookInformation(string? comcod, string? rescode, bool? is_active, bool groupcodeonly = false)
+        {
+            if (groupcodeonly == true)
+            {
+                var responsegroup = await _rescodeInf.GetRescodeInfBookGroupCode(comcod);
+
+                if (responsegroup == null)
+                    return NotFound(ApiResponse<ResCodeInf>.FailureResponse(
+                        new List<string> { "Resourses  Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+                return Ok(ApiResponse<IEnumerable<ResCodeInf>>.SuccessResponse(responsegroup, message: ""));
+
+            }
+            var response = await _rescodeInf.GetRescodeInfListByStatusAndCode(comcod, rescode, is_active);
+
+
+            if (response == null)
+                return NotFound(ApiResponse<IEnumerable<DtoResCodeInf>>.FailureResponse(
+                    new List<string> { "Resourses  Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<DtoResCodeInf>>.SuccessResponse(response, message: "No Data Found"));
+
+
+            return Ok(ApiResponse<IEnumerable<DtoResCodeInf>>.SuccessResponse(response, message: ""));
+        }
+
+        #endregion
+
+        #region Dynamic Code Book
+
+
+        /// <summary>
+        /// Gets List of Dynamic Code Book
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="label">This the Accounts label. such like 2,4,8,12.</param>
+        /// <param name="search_query">This the Dynamic Query of Accounts code. Example acccode like '11%'</param>       
+        /// <param name="user_id">This the Current user, if it set code book retrive as user permission if applicable.</param>        
+        /// <param name="is_manual_post">This the Boolean Paramter indicate Chatered Accounts code is for Manual Posting?, Default is false.</param>
+        /// <param name="is_last_head">This the Boolean Paramter indicate Last Transection or not default all are retrive.</param>
+
+        /// <returns>List of Dynamic Code Book</returns>
+        [HttpGet("get-dynamic-acc-code")]
+        public async Task<IActionResult> GetAccountsCodeBookInformation(string? comcod, string? label, string? search_query, int user_id, bool? is_manual_post,
+             bool is_last_head = true)
+        {
+            if (label == null || label.Length == 0 || Convert.ToInt32(label) > 12)
+            {
+                return NotFound(ApiResponse<AccCodeInf>.FailureResponse(
+                    new List<string> { "Label is Mandatory or Not Appropriate" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            if (search_query == null || search_query.Length == 0)
+            {
+                return NotFound(ApiResponse<AccCodeInf>.FailureResponse(
+                    new List<string> { "Searching query needed" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            var response = await _acccodebook.GetUserWiseAccCodeBookInfo(comcod, label, search_query, user_id, is_manual_post, is_last_head);
+
+
+            if (response == null)
+                return NotFound(ApiResponse<IEnumerable<DtoAccCodeBook>>.FailureResponse(
+                    new List<string> { "Accounts  Code not found or Query is wrong" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: "No Data Found"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: ""));
+        }
+
+        /// <summary>
+        /// Gets List of Resources Code Book
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="label">This the Resources label. such like 2,4,7,9,12.</param>
+        /// <param name="search_query">This the Dyanmic Query Resources code, Example rescode like '%01%'.</param>       
+        /// <param name="user_id">This the Current user, if it set code book retrive as user permission if applicable.</param>        
+        /// <param name="is_manual_post">This the Boolean Paramter indicate Chatered Accounts code is for Manual Posting?, Default is false.</param>
+        /// <param name="is_last_head">This the Boolean Paramter indicate Last Transection or not default all are retrive.</param>
+
+        /// <returns>List of Resources Code Book</returns>
+        [HttpGet("get-dynamic-res-code")]
+        public async Task<IActionResult> GetResourcesCodeBookInformation(string? comcod, string? label, string? search_query, int user_id, bool? is_manual_post,
+             bool is_last_head = true)
+        {
+            if (label == null || label.Length == 0 || Convert.ToInt32(label) > 12)
+            {
+                return NotFound(ApiResponse<DtoResCodeInf>.FailureResponse(
+                    new List<string> { "Label is Mandatory or Not Appropriate" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            if (search_query == null || search_query.Length == 0)
+            {
+                return NotFound(ApiResponse<DtoResCodeInf>.FailureResponse(
+                    new List<string> { "Searching query needed" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+            }
+            var response = await _rescodeInf.GetUserWiseResCodeBookInfo(comcod, label, search_query, user_id, is_manual_post, is_last_head);
+
+
+            if (response == null)
+                return NotFound(ApiResponse<IEnumerable<DtoResCodeInf>>.FailureResponse(
+                    new List<string> { "Resources  Code not found or Query is wrong" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: "No Data Found"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(response, message: ""));
+        }
+        #endregion
+
+        #region Sys Gen Code
+        /// <summary>
+        /// Gets all System General Code List in Velocity System
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="gencod">This the General code, like 0101001.</param>
+        /// <param name="is_active">This the current status of gencode.</param>
+        /// <param name="page_number">This the page number default 1.</param>
+        /// <param name="page_size">This the page size default 10.</param>        
+        /// <param name="groupcodeonly">This the Boolean Paramter indicate Group code or all code, Default is false.</param>        
+        /// 
+        /// <returns>List of System General Code</returns>
+        [HttpGet("get-sys-gen-code")]
+        public async Task<IActionResult> GetCompanyWiseSystemGeneralCodeBookInformation(string? comcod, string? gencod, bool? is_active,
+            int page_number = 0, int page_size = 0, bool groupcodeonly = false)
+        {
+            if (groupcodeonly == true)
+            {
+                var responsegroup = await _sysGenInf.GetSysGenInfGroupCode(comcod);
+
+                if (responsegroup == null)
+                    return NotFound(ApiResponse<SysGenInf>.FailureResponse(
+                        new List<string> { "System General Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+                return Ok(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(responsegroup, message: ""));
+
+            }
+            var response = await _sysGenInf.GetSysGenInfListByStatusAndGenCode(comcod, gencod, is_active);
+
+            if (response == null)
+                return NotFound(ApiResponse<SysGenInf>.FailureResponse(
+                    new List<string> { "System General Code not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            if (response.Count() == 0)
+                return NotFound(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(response, message: "No Data Found"));
+
+
+            int totalcount = response.Count();
+            if (page_size > 0 && page_number > 0)
+            {
+                response = response.Skip((page_number - 1) * page_size).Take(page_size);
+
+            }
+            var pagination = new PaginationMetadata(currentPage: page_number, pageSize: page_size, totalCount: totalcount);
+
+            return Ok(ApiResponse<IEnumerable<SysGenInf>>.SuccessResponse(response, pagination, message: ""));
+        }
+        #endregion
+    }
+}
