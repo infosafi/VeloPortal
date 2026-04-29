@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
+using VeloPortal.Domain.Entities.AccountsFinance;
+using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.Documentation;
+using VeloPortal.Domain.Entities.FacilityManagement;
+using VeloPortal.Domain.Entities.Procurement;
+using VeloPortal.Domain.Entities.SystemConfig;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
 {
@@ -17,11 +17,33 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
-
+        #region System configuration
+        public DbSet<ResCodeInf> ResCodeInf { get; set; }
+        public DbSet<SysGenInf> SysGenInf { get; set; }
+        public DbSet<CompanyInf> CompanyInf { get; set; }
+        public DbSet<Industries> Industries { get; set; }
+        #endregion
+        #region Authentication
+        public DbSet<PassRecovery> PassRecovery { get; set; }
+        public DbSet<VendorProfile> VendorProfile { get; set; }
+        public DbSet<SupportUser> SupportUsers { get; set; }
+        #endregion
+        #region AccountsFinance
+        public DbSet<FinCompReq> FinCompReq { get; set; }
+        #endregion
         #region Common       
 
         #endregion
+        #region FMS
+        public DbSet<ServReqInf> ServReqInf { get; set; }
+        #endregion
+        #region Documentation
+        public DbSet<DocInfDet> DocInfDet { get; set; }
+        #endregion
 
+        #region Vendor
+        public DbSet<VendorSuply> VendorSuply { get; set; }
+        #endregion
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

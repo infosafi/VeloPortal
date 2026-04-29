@@ -1,10 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VeloPortal.Domain.Extensions;
 
 namespace VeloPortal.Infrastructure.Data.SPHelper
@@ -25,11 +20,11 @@ namespace VeloPortal.Infrastructure.Data.SPHelper
 
 
         public DataSet? GetTransInfo20(string comCode, string SQLprocName, string CallType, string mDesc1 = "", string mDesc2 = "",
- string mDesc3 = "", string mDesc4 = "", string mDesc5 = "", string mDesc6 = "", string mDesc7 = "",
- string mDesc8 = "", string mDesc9 = "", string mDesc10 = "", string mDesc11 = "",
- string mDesc12 = "", string mDesc13 = "", string mDesc14 = "", string mDesc15 = "",
-     string mDesc16 = "", string mDesc17 = "", string mDesc18 = "", string mDesc19 = "", string mDesc20 = "",
-     string @userid = "")
+string mDesc3 = "", string mDesc4 = "", string mDesc5 = "", string mDesc6 = "", string mDesc7 = "",
+string mDesc8 = "", string mDesc9 = "", string mDesc10 = "", string mDesc11 = "",
+string mDesc12 = "", string mDesc13 = "", string mDesc14 = "", string mDesc15 = "",
+  string mDesc16 = "", string mDesc17 = "", string mDesc18 = "", string mDesc19 = "", string mDesc20 = "",
+  string @userid = "")
         {
             try
             {
@@ -59,6 +54,84 @@ namespace VeloPortal.Infrastructure.Data.SPHelper
                 cmd.Parameters.Add(new SqlParameter("@Desc18", mDesc18));
                 cmd.Parameters.Add(new SqlParameter("@Desc19", mDesc19));
                 cmd.Parameters.Add(new SqlParameter("@Desc20", mDesc20));
+                cmd.Parameters.Add(new SqlParameter("@UserID", @userid));
+                if (_dataAccess == null)
+                {
+                    ErrorTrackingExtension.SetError(new NullReferenceException("_dataAccess is null."));
+                    return null;
+                }
+
+                DataSet? result = _dataAccess.GetDataSet(cmd);
+
+                return result;
+            }
+            catch (Exception exp)
+            {
+                ErrorTrackingExtension.SetError(exp);
+                return null;
+            }
+        }
+        public DataSet? GetTransInfo50(string comCode, string SQLprocName, string CallType, string mDesc1 = "", string mDesc2 = "", string mDesc3 = "", string mDesc4 = "", string mDesc5 = "", string mDesc6 = "", string mDesc7 = "", string mDesc8 = "", string mDesc9 = "", string mDesc10 = "", string mDesc11 = "", string mDesc12 = "", string mDesc13 = "", string mDesc14 = "", string mDesc15 = "", string mDesc16 = "", string mDesc17 = "", string mDesc18 = "", string mDesc19 = "", string mDesc20 = "", string mDesc21 = "", string mDesc22 = "", string mDesc23 = "", string mDesc24 = "", string mDesc25 = "", string mDesc26 = "", string mDesc27 = "", string mDesc28 = "", string mDesc29 = "", string mDesc30 = "", string mDesc31 = "", string mDesc32 = "", string mDesc33 = "", string mDesc34 = "", string mDesc35 = "", string mDesc36 = "", string mDesc37 = "", string mDesc38 = "", string mDesc39 = "", string mDesc40 = "", string mDesc41 = "", string mDesc42 = "", string mDesc43 = "", string mDesc44 = "", string mDesc45 = "", string mDesc46 = "", string mDesc47 = "", string mDesc48 = "",
+          string mDesc49 = "", string mDesc50 = "", string @userid = "")
+        {
+            try
+            {
+                ErrorTrackingExtension.ClearErrors();
+                SqlCommand cmd = new SqlCommand();
+                cmd.CommandText = SQLprocName;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add(new SqlParameter("@Comcod", comCode));
+                cmd.Parameters.Add(new SqlParameter("@CallType", CallType));
+                cmd.Parameters.Add(new SqlParameter("@Desc1", mDesc1));
+                cmd.Parameters.Add(new SqlParameter("@Desc2", mDesc2));
+                cmd.Parameters.Add(new SqlParameter("@Desc3", mDesc3));
+                cmd.Parameters.Add(new SqlParameter("@Desc4", mDesc4));
+                cmd.Parameters.Add(new SqlParameter("@Desc5", mDesc5));
+                cmd.Parameters.Add(new SqlParameter("@Desc6", mDesc6));
+                cmd.Parameters.Add(new SqlParameter("@Desc7", mDesc7));
+                cmd.Parameters.Add(new SqlParameter("@Desc8", mDesc8));
+                cmd.Parameters.Add(new SqlParameter("@Desc9", mDesc9));
+                cmd.Parameters.Add(new SqlParameter("@Desc10", mDesc10));
+                cmd.Parameters.Add(new SqlParameter("@Desc11", mDesc11));
+                cmd.Parameters.Add(new SqlParameter("@Desc12", mDesc12));
+                cmd.Parameters.Add(new SqlParameter("@Desc13", mDesc13));
+                cmd.Parameters.Add(new SqlParameter("@Desc14", mDesc14));
+                cmd.Parameters.Add(new SqlParameter("@Desc15", mDesc15));
+                cmd.Parameters.Add(new SqlParameter("@Desc16", mDesc16));
+                cmd.Parameters.Add(new SqlParameter("@Desc17", mDesc17));
+                cmd.Parameters.Add(new SqlParameter("@Desc18", mDesc18));
+                cmd.Parameters.Add(new SqlParameter("@Desc19", mDesc19));
+                cmd.Parameters.Add(new SqlParameter("@Desc20", mDesc20));
+                cmd.Parameters.Add(new SqlParameter("@Desc21", mDesc21));
+                cmd.Parameters.Add(new SqlParameter("@Desc22", mDesc22));
+                cmd.Parameters.Add(new SqlParameter("@Desc23", mDesc23));
+                cmd.Parameters.Add(new SqlParameter("@Desc24", mDesc24));
+                cmd.Parameters.Add(new SqlParameter("@Desc25", mDesc25));
+                cmd.Parameters.Add(new SqlParameter("@Desc26", mDesc26));
+                cmd.Parameters.Add(new SqlParameter("@Desc27", mDesc27));
+                cmd.Parameters.Add(new SqlParameter("@Desc28", mDesc28));
+                cmd.Parameters.Add(new SqlParameter("@Desc29", mDesc29));
+                cmd.Parameters.Add(new SqlParameter("@Desc30", mDesc30));
+                cmd.Parameters.Add(new SqlParameter("@Desc31", mDesc31));
+                cmd.Parameters.Add(new SqlParameter("@Desc32", mDesc32));
+                cmd.Parameters.Add(new SqlParameter("@Desc33", mDesc33));
+                cmd.Parameters.Add(new SqlParameter("@Desc34", mDesc34));
+                cmd.Parameters.Add(new SqlParameter("@Desc35", mDesc35));
+                cmd.Parameters.Add(new SqlParameter("@Desc36", mDesc36));
+                cmd.Parameters.Add(new SqlParameter("@Desc37", mDesc37));
+                cmd.Parameters.Add(new SqlParameter("@Desc38", mDesc38));
+                cmd.Parameters.Add(new SqlParameter("@Desc39", mDesc39));
+                cmd.Parameters.Add(new SqlParameter("@Desc40", mDesc40));
+                cmd.Parameters.Add(new SqlParameter("@Desc41", mDesc41));
+                cmd.Parameters.Add(new SqlParameter("@Desc42", mDesc42));
+                cmd.Parameters.Add(new SqlParameter("@Desc43", mDesc43));
+                cmd.Parameters.Add(new SqlParameter("@Desc44", mDesc44));
+                cmd.Parameters.Add(new SqlParameter("@Desc45", mDesc45));
+                cmd.Parameters.Add(new SqlParameter("@Desc46", mDesc46));
+                cmd.Parameters.Add(new SqlParameter("@Desc47", mDesc47));
+                cmd.Parameters.Add(new SqlParameter("@Desc48", mDesc48));
+                cmd.Parameters.Add(new SqlParameter("@Desc49", mDesc49));
+                cmd.Parameters.Add(new SqlParameter("@Desc50", mDesc50));
                 cmd.Parameters.Add(new SqlParameter("@UserID", @userid));
                 if (_dataAccess == null)
                 {
