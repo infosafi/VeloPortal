@@ -104,6 +104,7 @@ namespace VeloPortal.WebApi.Extensions
 
             #region Sales Service add
             services.AddScoped<IMoneyRcptPmnt, MoneyReceiptRepository>();
+            services.AddScoped<ISalesReport, SalesReportRepository>();
             #endregion
 
             #region start Authentication Service add

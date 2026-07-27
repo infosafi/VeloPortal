@@ -28,9 +28,15 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public string current_step { get; set; } = String.Empty;
         public string customer_feedback { get; set; } = String.Empty;
         public int satisfaction { get; set; }
+        public bool is_canceled { get; set; }
+        public string referral_type { get; set; } = String.Empty;
+        public string referral_by { get; set; } = String.Empty;
 
         public ServReqInf() { }
-        public ServReqInf(long service_req_id_, string comcod_, string service_no_, string acccode_, string unitcode_, string custcode_, int priority_, DateTime service_req_date_, DateTime est_done_date_, string complain_details_, string special_notes_, int nursing_by_, string req_medium_, string creator_role_, int created_by_, DateTime created_date_, bool is_done_, string current_step_, string customer_feedback_, int satisfaction_)
+        public ServReqInf(long service_req_id_, string comcod_, string service_no_, string acccode_, string unitcode_, 
+            string custcode_, int priority_, DateTime service_req_date_, DateTime est_done_date_, string complain_details_, 
+            string special_notes_, int nursing_by_, string req_medium_, string creator_role_, int created_by_, DateTime created_date_, 
+            bool is_done_, string current_step_, string customer_feedback_, int satisfaction_, bool is_canceled_, string referral_type_, string referral_by_)
         {
             this.service_req_id = service_req_id_;
             this.comcod = comcod_;
@@ -52,6 +58,9 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
             this.current_step = current_step_;
             this.customer_feedback = customer_feedback_;
             this.satisfaction = satisfaction_;
+            this.is_canceled = is_canceled_;
+            this.referral_type = referral_type_;
+            this.referral_by = referral_by_;
         }
     }
 }
