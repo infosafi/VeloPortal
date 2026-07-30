@@ -28,7 +28,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCustomSwagger(app.Environment);
+app.UseCustomSwagger(app.Environment, builder.Configuration);
 app.MapControllers();
 
 app.Run();

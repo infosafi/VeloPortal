@@ -116,52 +116,45 @@ namespace VeloPortal.WebApi.Extensions
             return services;
         }
 
-        public static IApplicationBuilder UseCustomSwagger(this IApplicationBuilder app, IWebHostEnvironment env)
+        public static IApplicationBuilder UseCustomSwagger(this IApplicationBuilder app, IWebHostEnvironment env,
+            IConfiguration configuration)
         {
-            app.UseSwagger();
-            if (env.IsDevelopment())
+            // Read from config instead of hardcoding per environment
+            // var pathBase = env.IsProduction() ? "/clarraapi" : string.Empty;
+            var pathBase = env.IsProduction() ? configuration["Swagger:PathBase"] ?? string.Empty : string.Empty;
+            app.UseSwagger(c =>
             {
-                app.UseSwaggerUI(c =>
+                // Dynamically set the swagger.json route prefix
+                c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
                 {
-
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "VeloPortal API v1");
-                    //c.RoutePrefix = "api-docs";
-                    c.DocumentTitle = "VeloPortal API Documentation";
-                    c.DisplayRequestDuration();
-                    c.EnableFilter();
-                    c.EnableDeepLinking();
-                    c.DefaultModelsExpandDepth(-1); // Hide schemas by default
-                    c.ConfigObject.AdditionalItems["persistAuthorization"] = true;
-                    // c.SwaggerEndpoint("/swagger/Accounts-Finance-v1/swagger.json", "Accounts & Finance API v1");
-
-                    // v2
-                    //  c.SwaggerEndpoint("/swagger/v2/swagger.json", "Main API v2");
-                    // c.SwaggerEndpoint("/swagger/Accounts-Finance-v2/swagger.json", "Accounts & Finance API v2");
-                });
-            }
-            else if (env.IsProduction())
+                    swaggerDoc.Servers = new List<OpenApiServer>
             {
-                app.UseSwaggerUI(c =>
-                {
-
-                    //c.SwaggerEndpoint("/veloportalapi/swagger/v1/swagger.json", "VeloPortal API v1");
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "VeloPortal API v1");
-                    //c.RoutePrefix = "api-docs";
-                    c.DocumentTitle = "VeloPortal API Documentation";
-                    c.DisplayRequestDuration();
-                    c.EnableDeepLinking();
-                    c.EnableFilter();
-                    c.DefaultModelsExpandDepth(-1); // Hide schemas by default
-                                                    //  c.SwaggerEndpoint("/velocity/swagger/Accounts-Finance-v1/swagger.json", "Accounts & Finance API v1");
-
-                    // v2
-                    //  c.SwaggerEndpoint("/swagger/v2/swagger.json", "Main API v2");
-                    // c.SwaggerEndpoint("/swagger/Accounts-Finance-v2/swagger.json", "Accounts & Finance API v2");
+                new OpenApiServer { Url = $"{pathBase}" }
+            };
                 });
-            }
+            });
 
+            app.UseSwaggerUI(c =>
+            {
+                // Single dynamic endpoint — no more copy-paste per environment
+                c.SwaggerEndpoint($"{pathBase}/swagger/v1/swagger.json", "Velocity API v1");
+
+                // Uncomment when you add more versions/modules:
+                // c.SwaggerEndpoint($"{pathBase}/swagger/Accounts-Finance-v1/swagger.json", "Accounts & Finance API v1");
+                // c.SwaggerEndpoint($"{pathBase}/swagger/v2/swagger.json", "Main API v2");
+
+                c.DocumentTitle = "VeloPortal  API Documentation";
+                c.DisplayRequestDuration();
+                c.EnableFilter();
+                c.EnableDeepLinking();
+                c.DefaultModelsExpandDepth(-1);
+                c.ConfigObject.AdditionalItems["persistAuthorization"] = true;
+            });
 
             return app;
+
+
+           
         }
     }
 }
