@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Data;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Documentation;
@@ -64,52 +65,26 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Documentation
             }
         }
 
-        public async Task<IEnumerable<dynamic>> GetFilteredDocumentsAsync(
-         string comcod,
-         DateTime? fromDate = null,
-         DateTime? toDate = null,
-         string? acccode = null,
-         string? rescode = null,
-         string? gencode = null,
-         string? refno = null)
+        public async Task<IEnumerable<dynamic>> GetFilteredDocumentsAsync( string? comcod, string? fromDate,  string? toDate, string? acccode,string? rescode, string? gencode,string? refno)
         {
             try
             {
-                await Task.Delay(1);
-                string desc1 = fromDate.HasValue ? fromDate.Value.ToString("dd-MMM-yyyy") : "";
-                string desc2 = toDate.HasValue ? toDate.Value.ToString("dd-MMM-yyyy") : "";
-
-                var ds = _spProcessAccess?.GetTransInfo20(
-                    comCode: comcod,
-                    SQLprocName: "itv_doc.SP_DOC_MGT",
-                    CallType: "Get_Periodic_Filtered_Doc_List",
-                    mDesc1: desc1,     // ← From Date
-                    mDesc2: desc2,     // ← To Date
-                    mDesc3: acccode ?? "",
-                    mDesc4: rescode ?? "",
-                    mDesc5: gencode ?? "",
-                    mDesc6: refno ?? ""
-                );
-
-                if (ds?.Tables.Count is 0 || ds.Tables[0].Rows.Count == 0)
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
                     return Enumerable.Empty<dynamic>();
+                }
 
+                DataSet? ds = _spProcessAccess.GetTransInfo20( comcod ?? "","itv_doc.SP_DOC_MGT", "Get_Periodic_Filtered_Doc_List", fromDate ?? "",toDate ?? "",acccode ?? "",rescode ?? "", gencode ?? "",refno ?? "");
 
-                return ds.Tables[0].DataTableToDynamicList();
-                //var result = ds.Tables[0].AsEnumerable().Select(row =>
-                //{
-                //    dynamic item = new ExpandoObject();
-                //    var dict = (IDictionary<string, object>)item;
+                if (ds == null || ds.Tables.Count == 0)
+                {
+                    return Enumerable.Empty<dynamic>();
+                }
 
-                //    foreach (DataColumn col in ds.Tables[0].Columns)
-                //    {
-                //        var value = row.IsNull(col.ColumnName) ? null : row[col.ColumnName];
-                //        dict[col.ColumnName] = value ?? "";
-                //    }
-                //    return item;
-                //});
+                IEnumerable<dynamic> result = ds.Tables[0].DataTableToDynamicList();
 
-                //return result;
+                return result;
             }
             catch (Exception ex)
             {
