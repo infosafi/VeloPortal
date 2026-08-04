@@ -238,10 +238,12 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 }
 
                 IEnumerable<dynamic>? serviceInfo = ds.Tables[0].DataTableToDynamicList();
-               
+                IEnumerable<dynamic>? serviceTimelineInfo = ds.Tables[3].DataTableToDynamicList();
+
                 var resultDto = new DtoPublicServiceRequestDetails
                 {
-                    ServiceInfo = serviceInfo 
+                    ServiceInfo = serviceInfo,
+                    ServiceTimelineInfo = serviceTimelineInfo,
                 };
 
                 return resultDto;
