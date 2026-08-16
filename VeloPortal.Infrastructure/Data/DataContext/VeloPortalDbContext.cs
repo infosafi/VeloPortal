@@ -22,6 +22,8 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         public DbSet<SysGenInf> SysGenInf { get; set; }
         public DbSet<CompanyInf> CompanyInf { get; set; }
         public DbSet<Industries> Industries { get; set; }
+        public DbSet<ComApiInf> ComApiInf { get; set; }
+        public DbSet<Messagelog> Messagelog { get; set; }
         #endregion
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
