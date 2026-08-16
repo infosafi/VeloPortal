@@ -9,6 +9,7 @@ namespace VeloPortal.WebApi.Mappings
         public SystemConfigMapper()
         {
             CreateMap<ResCodeInf, DtoResCodeInf>().ReverseMap();
+            CreateMap<ComApiInf, DtoComApiInf>().ReverseMap();
         }
     }
 }
