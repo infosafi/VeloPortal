@@ -51,7 +51,8 @@ namespace VeloPortal.Infrastructure.Data.Repositories.SystemConfig
                     reference = dto.reference,
                     created_date = dto.created_date,
                     created_by = dto.created_by,
-                    is_status = dto.is_status
+                    is_status = dto.is_status,
+                    sources = dto.sources
                 };
 
                 await db.Set<Messagelog>().AddAsync(entity);
