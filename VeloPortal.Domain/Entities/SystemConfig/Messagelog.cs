@@ -21,9 +21,9 @@ namespace VeloPortal.Domain.Entities.SystemConfig
         public DateTime created_date { get; set; }
         public int created_by { get; set; }
         public bool is_status { get; set; }
-
+        public string sources { get; set; } = String.Empty;
         public Messagelog() { }
-        public Messagelog(long message_id_, string comcod_, long module_id_, string message_type_, string gateway_, string message_body_, string receiver_name_, string receiver_, string reference_, DateTime created_date_, int created_by_, bool is_status)
+        public Messagelog(long message_id_, string comcod_, long module_id_, string message_type_, string gateway_, string message_body_, string receiver_name_, string receiver_, string reference_, DateTime created_date_, int created_by_, bool is_status, string sources_)
         {
             this.message_id = message_id_;
             this.comcod = comcod_;
@@ -37,6 +37,7 @@ namespace VeloPortal.Domain.Entities.SystemConfig
             this.created_date = created_date_;
             this.created_by = created_by_;
             this.is_status = is_status;
+            this.sources = sources_;
         }
     }
 }
