@@ -112,6 +112,7 @@ namespace VeloPortal.WebApi.Extensions
             #region start Authentication Service add
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
             services.AddScoped<IPassRecovery, PassRecoveryRepository>();
+            services.AddScoped<ILoginLogs, LoginLogsRepository>();
             #endregion
 
             #region start AcccountsFinance Service add
@@ -135,6 +136,7 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
+
             return services;
         }
     }
