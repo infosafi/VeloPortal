@@ -11,7 +11,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    [Authorize]
+
     public class DocumentationController(IDocInfDet _docInfDet) : ControllerBase
     {
         #region Upload Documentation
@@ -20,6 +20,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
         /// </summary>
         /// The list of <see cref="DocInfDet"/> objects to be deleted.
         [HttpPost("upload-docs")]
+        [Authorize]
         public async Task<IActionResult> UploadDocument(List<DocInfDet> docInfDets)
         {
             if (docInfDets == null)
@@ -38,6 +39,34 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
         }
         #endregion
         #region Get Filtered Document List
+
+        /// <summary>
+        /// Retrieve filtered Public document list with date range and code filters
+        /// </summary>
+        /// <param name="comcod">Company Code (Required)</param>
+        /// <param name="fromDate">From upload date (optional) → Format: YYYY-MM-DD</param>
+        /// <param name="toDate">To upload date (optional) → Format: YYYY-MM-DD</param>
+        /// <param name="acccode">Project/Account Code (optional - partial match)</param>
+        /// <param name="rescode">Resource Code (optional - partial match)</param>
+        /// <param name="gencode">General Code (optional - partial match)</param>
+        /// <param name="refno">Reference No (optional - partial match)</param>
+        /// <returns>Filtered documents with full descriptions</returns>
+        [HttpGet("filtered-public-docs")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<dynamic>>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<string>), 400)]
+
+        public async Task<IActionResult> GetFilteredPublicDocuments(string? comcod, string? fromDate, string? toDate,string? acccode,string? rescode,string? gencode,string? refno)
+        {
+            if (string.IsNullOrWhiteSpace(comcod))
+                return BadRequest(ApiResponse<string>.FailureResponse("comcod is required"));
+
+            var documents = await _docInfDet.GetFilteredDocumentsAsync(comcod, fromDate, toDate, acccode, rescode, gencode, refno);
+
+            var message = documents.Any() ? "Documents retrieved successfully"  : "No documents found for the given filters";
+
+            return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(data: documents, message: message ));
+        }
+
         /// <summary>
         /// Retrieve filtered document list with date range and code filters
         /// </summary>
@@ -52,24 +81,15 @@ namespace VeloPortal.WebApi.Controllers.V1.Documentation
         [HttpGet("filtered-docs")]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<dynamic>>), 200)]
         [ProducesResponseType(typeof(ApiResponse<string>), 400)]
-        public async Task<IActionResult> GetFilteredDocuments(
-            [FromQuery] string comcod,
-            [FromQuery] DateTime? fromDate = null,
-            [FromQuery] DateTime? toDate = null,
-            [FromQuery] string? acccode = null,
-            [FromQuery] string? rescode = null,
-            [FromQuery] string? gencode = null,
-            [FromQuery] string? refno = null)
+        [Authorize]
+        public async Task<IActionResult> GetFilteredDocuments(string? comcod, string? fromDate, string? toDate,string? acccode,string? rescode,string? gencode, string? refno)
         {
             if (string.IsNullOrWhiteSpace(comcod))
                 return BadRequest(ApiResponse<string>.FailureResponse("comcod is required"));
 
-            var documents = await _docInfDet.GetFilteredDocumentsAsync(
-                comcod, fromDate, toDate, acccode, rescode, gencode, refno);
+            var documents = await _docInfDet.GetFilteredDocumentsAsync(comcod, fromDate, toDate, acccode, rescode, gencode, refno);
 
-            var message = documents.Any()
-                ? "Documents retrieved successfully"
-                : "No documents found for the given filters";
+            var message = documents.Any() ? "Documents retrieved successfully" : "No documents found for the given filters";
 
             return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(
                 data: documents,

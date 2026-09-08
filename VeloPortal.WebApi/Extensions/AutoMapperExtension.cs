@@ -6,7 +6,8 @@ namespace VeloPortal.WebApi.Extensions
     {
         public static IServiceCollection AddMapperServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddAutoMapper(typeof(SystemConfigMapper));
+            // services.AddAutoMapper(typeof(SystemConfigMapper));
+            services.AddAutoMapper(cfg => { }, typeof(SystemConfigMapper));
             return services;
 
         }
