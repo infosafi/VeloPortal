@@ -22,11 +22,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
         private readonly SPProcessAccess? _spProcessAccess;
   
 
-        public PortalAuthUserRepository(
-          IDbContextFactory<VeloPortalDbContext> dbContextFactory,
-          ILogger<ServReqInfRepository> logger,
-          IConfiguration configuration
-            )
+        public PortalAuthUserRepository(IDbContextFactory<VeloPortalDbContext> dbContextFactory, ILogger<ServReqInfRepository> logger, IConfiguration configuration)
         {
             _dbContextFactory = dbContextFactory;
             _logger = logger;
@@ -64,6 +60,34 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
+        public async Task<DtoUserInf?> GetUserInfoByIdRole(string comcod, string user_type, string user_id, string user_role)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<DtoUserInf?>(null);
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_User_Info_By_ID_Role", user_type, user_id, user_role);
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<DtoUserInf?>(null);
+                }
+
+                var userList = ds.Tables[0].DataTableToList<DtoUserInf>();
+                var user = userList?.FirstOrDefault();
+
+                return await Task.FromResult(user);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<DtoUserInf?>(null);
+            }
+        }
+
         public async Task<IEnumerable<CompanyInf>?> GetCompanyInfoListByStatus(bool? is_active)
         {
             try
@@ -72,13 +96,11 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 {
                     var query = dbContext.CompanyInf.AsNoTracking().AsQueryable();
 
-
                     if (is_active.HasValue)
                         query = query.Where(p => p.is_active == is_active.Value);
 
                     return await query.ToListAsync();
                 }
-
             }
             catch (Exception ex)
             {
@@ -152,7 +174,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             {
                 if (_spProcessAccess == null) return false;
 
-
                 DataSet? ds = _spProcessAccess.GetTransInfo20( comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_User_Password", user_type, userId, new_password, portal_role);
 
                 return ds != null;
@@ -164,14 +185,11 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-
-
         public async Task<long> InsertOrUpdateCustomer(DtoCustomer obj)
         {
             try
             {
                if (_spProcessAccess == null) return 0;
-
 
                 DataSet? ds = _spProcessAccess.GetTransInfo20(obj.comcod, "itv_portal.SP_USER_OPERATION", "Update_Portal_CustomerProfile", "Customer",  obj.sup_user_id.ToString(), obj.fullname, obj.user_role, obj.suser_email, obj.suser_phone);
 

@@ -47,19 +47,15 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         {
             if (dto.comcod?.Length == 0)
             {
-
                 return BadRequest(new { Success = false, message = "Company Selection is missing!" });
-
             }
             if (dto.user_or_email?.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Username or Email Mandatory!" });
-
             }
             if (dto.password?.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Password Mandatory!" });
-
             }
 
             string encpassword = EncryptionExtension.PasswordEnc(dto.password ?? "");
@@ -113,6 +109,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             });
         }
 
+
         public static string GenerateSessionId(int userId, string comcod)
         {
             // Generate a random number
@@ -120,7 +117,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             RandomNumberGenerator.Fill(randomBytes);
             string randomString = Convert.ToBase64String(randomBytes).Replace("/", "_").Replace("+", "-");
 
-            // Combine with userId and comcod (replacing loginTime with userId for uniqueness without date/time)
+            // Combine with userId and comcod
             string input = $"{randomString}{userId}{comcod}";
 
             // Hash to create a unique, fixed-length SessionID
@@ -128,6 +125,39 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             {
                 byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
                 return Convert.ToBase64String(hashBytes).Replace("/", "_").Replace("+", "-").Substring(0, 16);
+            }
+        }
+
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(DtoJwtToken dto)
+        {
+            var storedToken = await _refreshRepo.GetByTokenAsync(dto.RefreshToken);
+
+            if (storedToken == null || storedToken.is_revoked || storedToken.expires < DateTime.UtcNow)
+                return Unauthorized();
+
+            var user = await _userRepo.GetUserInfoByIdRole(dto.comcod ?? "", dto.user_type ?? "", Convert.ToString(storedToken.user_id), dto.user_role ?? "");
+            var newAccessToken = _jwtService.GenerateAccessToken(user);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
+
+            storedToken.is_revoked = true;
+            await _refreshRepo.RevokeAsync(dto.RefreshToken);
+
+            if (user != null)
+            {
+                await _refreshRepo.SaveAsync(new RefreshToken
+                {
+                    token = newRefreshToken,
+                    expires = DateTime.UtcNow.AddDays(7),
+                    user_id = user.unq_id
+                });
+
+                return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
+            }
+            else
+            {
+                return Ok(new { message = "Token not refreshed" });
             }
         }
 
@@ -246,40 +276,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
-
-        //[HttpPost("refresh")]
-        //public async Task<IActionResult> Refresh(DtoJwtToken dto)
-        //{
-        //    var storedToken = await _refreshRepo.GetByTokenAsync(dto.RefreshToken);
-        //    if (storedToken == null || storedToken.is_revoked || storedToken.expires < DateTime.UtcNow)
-        //        return Unauthorized();
-
-
-        //    var user = await _userRepo.GetUserInfoByIdAsync(Convert.ToInt32(storedToken.user_id));
-        //    var newAccessToken = _jwtService.GenerateAccessToken(user);
-        //    var newRefreshToken = _jwtService.GenerateRefreshToken();
-
-        //    storedToken.is_revoked = true;
-        //    await _refreshRepo.RevokeAsync(dto.RefreshToken);
-
-        //    if (user != null)
-        //    {
-        //        await _refreshRepo.SaveAsync(new RefreshToken
-        //        {
-        //            token = newRefreshToken,
-        //            expires = DateTime.UtcNow.AddDays(7),
-        //            user_id = user.unq_id
-        //        });
-        //        return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
-
-        //    }
-        //    else
-        //    {
-        //        return Ok(new { message = "Token not refreshed" });
-        //    }
-
-
-        //}
 
         /// <summary>
         /// Sends a 6-digit OTP to the user's email for password recovery.
