@@ -57,5 +57,30 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
                 return null;
             }
         }
+
+        public async Task<IEnumerable<dynamic>?> GetUnitPaymentScheduleDetailAsync(string comcod, string acccode, string urescode, string? type = null, string? gengrp = null)
+        {
+            try
+            {
+                var ds = _spProcessAccess.GetTransInfo20(
+                    comCode: comcod,
+                    SQLprocName: "[itv_sale].[SP_UNIT_SALES_MGT]", "Get_Unit_Payment_Schedule_Detail", acccode, urescode, type ?? "", gengrp ?? "");
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                    return null;
+
+                var data = ds.Tables[0].DataTableToDynamicList();
+                return await Task.FromResult(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to get unit payment schedule detail for comcod: {Comcod}, unit: {Urescode}",
+                    comcod, urescode);
+
+                ErrorTrackingExtension.SetError(ex);
+                return null;
+            }
+        }
     }
 }
