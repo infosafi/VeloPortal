@@ -31,7 +31,12 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public bool is_canceled { get; set; }
         public string referral_type { get; set; } = String.Empty;
         public string referral_by { get; set; } = String.Empty;
-
+        public bool is_close_req { get; set; }
+        public int close_req_by { get; set; }
+        public DateTime close_req_date { get; set; } = new DateTime(1900, 01, 01);
+        public int is_canceled_by { get; set; }
+        public DateTime is_cancel_date { get; set; } = new DateTime(1900, 01, 01);
+        public string close_req_reason { get; set; } = String.Empty;
         public ServReqInf() { }
         public ServReqInf(long service_req_id_, string comcod_, string service_no_, string acccode_, string unitcode_, 
             string custcode_, int priority_, DateTime service_req_date_, DateTime est_done_date_, string complain_details_, 
