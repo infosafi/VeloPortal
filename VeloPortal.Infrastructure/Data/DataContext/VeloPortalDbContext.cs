@@ -5,6 +5,7 @@ using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 using VeloPortal.Domain.Entities.Procurement;
+using VeloPortal.Domain.Entities.Sales;
 using VeloPortal.Domain.Entities.SystemConfig;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
@@ -51,6 +52,10 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region Vendor
         public DbSet<VendorSuply> VendorSuply { get; set; }
+        #endregion
+
+        #region Sales
+        public DbSet<CustomerInf> CustomerInf { get; set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

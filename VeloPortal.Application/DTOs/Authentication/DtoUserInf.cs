@@ -11,5 +11,6 @@
         public string? user_phone { get; set; }
         public string? user_role { get; set; }
         public string? rolename { get; set; }
+        public bool is_public_for_app { get; set; }
     }
 }
