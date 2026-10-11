@@ -126,6 +126,7 @@ namespace VeloPortal.WebApi.Extensions
 
             #region start Service Request add
             services.AddScoped<IServReqInf, ServReqInfRepository>();
+            services.AddScoped<IAdvicesInf, AdvicesInfRepository>();
             #endregion
 
             #region start Vendor add
