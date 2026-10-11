@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.FacilityManagement;
+using VeloPortal.Domain.Entities.Sales;
+using VeloPortal.Domain.Enums;
+using VeloPortal.Domain.Extensions;
 
 namespace VeloPortal.WebApi.Controllers.V1.Sales
 {
@@ -10,7 +14,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
     [Authorize]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class SalesController(IMoneyRcptPmnt _moneyReceipt) : ControllerBase
+    public class SalesController(IMoneyRcptPmnt _moneyReceipt, ICustomerInf _custInf) : ControllerBase
     {
 
         /// <summary>
@@ -99,6 +103,41 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
             return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(
                 data: data,
                 message: $"{data.Count()} payment/schedule detail record(s) retrieved successfully."));
+        }
+
+
+        /// <summary>
+        /// Toggle Customer Profile Privacy.
+        /// </summary>
+        /// <param name="custid">This parameter is the customer id such as 1.</param>
+        /// <returns>A Response message of the operations result.</returns>
+        /// <response code="200">Privacy toggled successfully</response>
+        /// <response code="400">Failed to toggle the privacy settings.</response>
+        [HttpPost("toggle-cust-profile-privacy")]
+        public async Task<IActionResult> ToggleCustomerProfilePrivacy(string? comcod, long? custid, bool isPublic)
+        {
+            if (string.IsNullOrEmpty(comcod) || custid == 0)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Company code and Customer id is required."));
+            }
+
+            try
+            {
+                var response = await _custInf.TogggleCustProfilePrivacy(comcod, custid, isPublic);
+
+                if (response)
+                {
+                    var type = (isPublic == true) ? "Public" : "Private";
+
+                    return Ok(ApiResponse<dynamic>.SuccessResponse(response, message: $"Privacy settings turns {type} successful."));
+                }
+
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Privacy settings toggle failed."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Unknown Error Occured."));
+            }
         }
     }
 }

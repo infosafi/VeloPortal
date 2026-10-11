@@ -108,6 +108,7 @@ namespace VeloPortal.WebApi.Extensions
             #region Sales Service add
             services.AddScoped<IMoneyRcptPmnt, MoneyReceiptRepository>();
             services.AddScoped<ISalesReport, SalesReportRepository>();
+            services.AddScoped<ICustomerInf, CustomerInfRepository>();
             #endregion
 
             #region start Authentication Service add
@@ -138,6 +139,7 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
+
 
             return services;
         }
