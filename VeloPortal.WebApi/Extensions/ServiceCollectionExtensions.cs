@@ -91,6 +91,7 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IFtpService, FtpService>();
 
             #region System configuration Service add
+            services.AddScoped<IAppManagement, AppManagementRepository>();
             services.AddScoped<IIndustries, IndustriesRepository>();
             services.AddScoped<IResCodeInf, ResCodeInfRepository>();
             services.AddScoped<IAccCodeInf, AccCodeInfRepository>();

@@ -17,12 +17,12 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
     public class FmsMgtController : ControllerBase
     {
         private readonly IServReqInf _servReqInf;
+        private readonly IAdvicesInf _advicesInf;
 
-
-        public FmsMgtController(
-            IServReqInf servReqInf)
+        public FmsMgtController(IServReqInf servReqInf, IAdvicesInf advicesInf)
         {
             _servReqInf = servReqInf;
+            _advicesInf = advicesInf;
         }
 
         /// <summary>
@@ -231,5 +231,37 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             }
             return Ok(ApiResponse<bool>.SuccessResponse(updatedSerReqInf, message: "Service request info updated successfully"));
         }
+
+        #region Advice Information
+
+        /// <summary>
+        /// Save/Update Advice Information
+        /// </summary>
+        /// <param name="advices">This the Post body Advice Information</param>     
+        /// <returns>Advice Information</returns>
+
+        [HttpPost("update-advices-info")]
+        public async Task<IActionResult> InsertOrUpdateAdvicesInf([FromBody] List<AdvicesInf> advices)
+        {
+            try
+            {
+                var result = await _advicesInf.InsertOrUpdateAdvicesInf(advices);
+
+                if (result == null)
+                {
+                    var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Bulk Import Advice Information"));
+                }
+
+                return Ok(ApiResponse<List<AdvicesInf>>.SuccessResponse(result, message: "Bulk Import Advice Information Save Successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Advice Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
+            }
+        }
+
+        #endregion
     }
 }

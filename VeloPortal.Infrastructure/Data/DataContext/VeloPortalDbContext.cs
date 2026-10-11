@@ -25,20 +25,26 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         public DbSet<ComApiInf> ComApiInf { get; set; }
         public DbSet<Messagelog> Messagelog { get; set; }
         #endregion
+
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
         public DbSet<VendorProfile> VendorProfile { get; set; }
         public DbSet<SupportUser> SupportUsers { get; set; }
         #endregion
+
         #region AccountsFinance
         public DbSet<FinCompReq> FinCompReq { get; set; }
         #endregion
+
         #region Common       
 
         #endregion
+
         #region FMS
         public DbSet<ServReqInf> ServReqInf { get; set; }
+        public DbSet<AdvicesInf> AdvicesInf { get; set; }
         #endregion
+
         #region Documentation
         public DbSet<DocInfDet> DocInfDet { get; set; }
         #endregion
@@ -46,6 +52,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #region Vendor
         public DbSet<VendorSuply> VendorSuply { get; set; }
         #endregion
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
