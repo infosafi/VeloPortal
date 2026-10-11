@@ -10,5 +10,10 @@
         public string? unitdesc { get; set; }
         public string? urescode { get; set; }
         public string? custcode { get; set; }
+        public string unit_size { get; set; } = string.Empty;
+        public string meas_unit { get; set; } = string.Empty;
+        public string project_thumb { get; set; } = string.Empty;
+
+
     }
 }
