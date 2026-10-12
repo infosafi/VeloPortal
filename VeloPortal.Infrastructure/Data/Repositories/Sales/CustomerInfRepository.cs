@@ -8,6 +8,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VeloPortal.Application.DTOs.Sales;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Extensions;
@@ -39,11 +40,11 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
-        public async Task<bool> TogggleCustProfilePrivacy(string? comcod, long? custid, bool isPublic)
+        public async Task<bool> TogggleCustProfilePrivacy(DtoToggleCustProfilePrivacy obj)
         {
-            if (custid == null || custid == 0)
+            if (obj == null)
             {
-                throw new Exception("Company id and Customer id is required.");
+                throw new Exception("Payload is required.");
             }
 
             try
@@ -51,12 +52,12 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
                 await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
                 await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-                var existingData = await dbContext.CustomerInf.FirstOrDefaultAsync(a => a.comcod == comcod && a.custid == custid);
+                var existingData = await dbContext.CustomerInf.FirstOrDefaultAsync(a => a.comcod == obj.comcod && a.custid == obj.custid);
 
                 if (existingData != null)
                 {
                     // Update existing record
-                    existingData.is_public_for_app = isPublic;
+                    existingData.is_public_for_app = obj.is_public_for_app;
                 }
 
                 await dbContext.SaveChangesAsync();

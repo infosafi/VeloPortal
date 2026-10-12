@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using VeloPortal.Application.DTOs.FacilityManagement;
+using VeloPortal.Application.DTOs.Sales;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Settings;
@@ -117,20 +118,20 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
         /// <response code="200">Privacy toggled successfully</response>
         /// <response code="400">Failed to toggle the privacy settings.</response>
         [HttpPost("toggle-cust-profile-privacy")]
-        public async Task<IActionResult> ToggleCustomerProfilePrivacy(string? comcod, long? custid, bool isPublic)
+        public async Task<IActionResult> ToggleCustomerProfilePrivacy([FromBody] DtoToggleCustProfilePrivacy obj)
         {
-            if (string.IsNullOrEmpty(comcod) || custid == 0)
+            if (obj == null)
             {
-                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Company code and Customer id is required."));
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Payload is required."));
             }
 
             try
             {
-                var response = await _custInf.TogggleCustProfilePrivacy(comcod, custid, isPublic);
+                var response = await _custInf.TogggleCustProfilePrivacy(obj);
 
                 if (response)
                 {
-                    var type = (isPublic == true) ? "Public" : "Private";
+                    var type = (obj.is_public_for_app == true) ? "Public" : "Private";
 
                     return Ok(ApiResponse<dynamic>.SuccessResponse(response, message: $"Privacy settings turns {type} successful."));
                 }
