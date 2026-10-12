@@ -1,6 +1,8 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VeloPortal.Application.DTOs.FacilityManagement;
+using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.FacilityManagement;
@@ -139,5 +141,44 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
                 return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Unknown Error Occured."));
             }
         }
+
+
+        #region Get all Customer Info 
+        /// <summary>
+        /// Get Single service details Info
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="service_req_id">This paramter is for service request id , such like 1,2,3</param> 
+        /// <returns>Signle service Details Infomation</returns>
+        [HttpGet("get-single-service-details")]
+
+        public async Task<IActionResult> GetSingleServiceDetails(string? comcod, long? service_req_id)
+        {
+            try
+            {
+                if (service_req_id == null || service_req_id == 0)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "service_req_id Should not Empty or null"));
+                }
+                var response = await _servReqInf.GetSingleServiceRequestDetailsInformation(comcod, service_req_id);
+
+                if (response == null)
+                    return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Single service details info not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+                int serviceCount = response.ServiceInfo?.Count() ?? 0;
+
+                if (serviceCount == 0)
+                    return NotFound(ApiResponse<DtoServiceRequestDetails>.SuccessResponse(response, message: "No Single service details found for the given ID."));
+
+
+                return Ok(ApiResponse<DtoServiceRequestDetails>.SuccessResponse(response, message: $"Single service details loaded successfully. (Data Found: {serviceCount})"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Service resources: {ex.Message}" }, "Internal Server Error"));
+            }
+
+        }
+        #endregion
     }
 }
