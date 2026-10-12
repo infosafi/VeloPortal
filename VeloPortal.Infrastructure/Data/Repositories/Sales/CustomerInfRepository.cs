@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -69,6 +70,38 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
                 _logger.LogError(ex, "Privacy settings toggle failed.");
 
                 return false;
+            }
+        }
+
+
+        public async Task<IEnumerable<dynamic>?> GetRelatedProjPubProfile(string? comcod, string? custcode)
+        {
+            try
+            {
+                await Task.Delay(1);
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
+                    return null;
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Project_Wise_Public_Profile", custcode ?? string.Empty);
+                if (ds == null || ds.Tables.Count == 0)
+                {
+                    return null;
+                }
+
+                var result = ds.Tables[0].DataTableToDynamicList();
+
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Related Projects Public Profile retrieval failed.");
+
+                return null;
             }
         }
     }

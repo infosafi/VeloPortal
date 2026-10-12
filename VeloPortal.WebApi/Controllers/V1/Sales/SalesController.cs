@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using VeloPortal.Application.DTOs.FacilityManagement;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Sales;
@@ -144,41 +145,37 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
 
 
         #region Get all Customer Info 
-        ///// <summary>
-        ///// Get Single service details Info
-        ///// </summary>
-        ///// <param name="comcod">This the Company Code, such like 11001.</param>
-        ///// <param name="service_req_id">This paramter is for service request id , such like 1,2,3</param> 
-        ///// <returns>Signle service Details Infomation</returns>
-        //[HttpGet("get-single-service-details")]
+        /// <summary>
+        /// Get All Public Profile related to all the Projects of the Current User
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="custcode">This paramter is for customer id , such like 510100205052</param> 
+        /// <returns>A Details list of public customer info with project information.</returns>
+        [HttpGet("get-related-proj-public-profile")]
 
-        //public async Task<IActionResult> GetSingleServiceDetails(string? comcod, long? service_req_id)
-        //{
-        //    try
-        //    {
-        //        if (service_req_id == null || service_req_id == 0)
-        //        {
-        //            return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "service_req_id Should not Empty or null"));
-        //        }
-        //        var response = await _servReqInf.GetSingleServiceRequestDetailsInformation(comcod, service_req_id);
+        public async Task<IActionResult> GetRelatedProjPubProfile(string? comcod, string? custcode)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(comcod) || string.IsNullOrEmpty(custcode))
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "Company code and Customer code is required."));
+                }
 
-        //        if (response == null)
-        //            return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Single service details info not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+                var response = await _custInf.GetRelatedProjPubProfile(comcod, custcode);
 
-        //        int serviceCount = response.ServiceInfo?.Count() ?? 0;
-
-        //        if (serviceCount == 0)
-        //            return NotFound(ApiResponse<DtoServiceRequestDetails>.SuccessResponse(response, message: "No Single service details found for the given ID."));
+                if (response == null)
+                    return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Related Project Public Profile Not Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
 
-        //        return Ok(ApiResponse<DtoServiceRequestDetails>.SuccessResponse(response, message: $"Single service details loaded successfully. (Data Found: {serviceCount})"));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Service resources: {ex.Message}" }, "Internal Server Error"));
-        //    }
+                return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(response, message: $"Related Project Public Profile loaded successfully. (Data Found: {response.Count()})"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error getting related project public profile: {ex.Message}" }, "Internal Server Error"));
+            }
 
-        //}
+        }
         #endregion
     }
 }
