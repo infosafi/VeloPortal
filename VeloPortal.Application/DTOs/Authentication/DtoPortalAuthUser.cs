@@ -10,5 +10,6 @@
         public string? user_agent { get; set; } = String.Empty;
         public string? location { get; set; } = String.Empty;
         public string? macaddress { get; set; } = String.Empty;
+
     } 
 }
