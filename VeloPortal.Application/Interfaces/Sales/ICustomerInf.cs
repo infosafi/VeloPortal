@@ -10,6 +10,6 @@ namespace VeloPortal.Application.Interfaces.Sales
     public interface ICustomerInf
     {
         Task<bool> TogggleCustProfilePrivacy(DtoToggleCustProfilePrivacy obj);
-        Task<IEnumerable<dynamic>?> GetRelatedProjPubProfile(string? comcod, string? custcode);
+        Task<IEnumerable<dynamic>?> GetRelatedProjPubProfile(string? comcod, string? custcode, string? acccode);
     }
 }
