@@ -151,10 +151,11 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
         /// </summary>
         /// <param name="comcod">This the Company Code, such like 11001.</param>
         /// <param name="custcode">This paramter is for customer id , such like 510100205052</param> 
+        /// <param name="acccode">This paramter is for project code , such like 510100205052</param> 
         /// <returns>A Details list of public customer info with project information.</returns>
         [HttpGet("get-related-proj-public-profile")]
 
-        public async Task<IActionResult> GetRelatedProjPubProfile(string? comcod, string? custcode)
+        public async Task<IActionResult> GetRelatedProjPubProfile(string? comcod, string? custcode, string? acccode)
         {
             try
             {
@@ -163,7 +164,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Sales
                     return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "Company code and Customer code is required."));
                 }
 
-                var response = await _custInf.GetRelatedProjPubProfile(comcod, custcode);
+                var response = await _custInf.GetRelatedProjPubProfile(comcod, custcode, acccode);
 
                 if (response == null)
                     return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Related Project Public Profile Not Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
