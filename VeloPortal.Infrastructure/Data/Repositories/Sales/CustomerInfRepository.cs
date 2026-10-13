@@ -75,7 +75,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
         }
 
 
-        public async Task<IEnumerable<dynamic>?> GetRelatedProjPubProfile(string? comcod, string? custcode)
+        public async Task<IEnumerable<dynamic>?> GetRelatedProjPubProfile(string? comcod, string? custcode, string? acccode)
         {
             try
             {
@@ -86,7 +86,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Sales
                     return null;
                 }
 
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Project_Wise_Public_Profile", custcode ?? string.Empty);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_portal.SP_USER_OPERATION", "Get_Project_Wise_Public_Profile", custcode ?? string.Empty, acccode ?? string.Empty);
                 if (ds == null || ds.Tables.Count == 0)
                 {
                     return null;
