@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Application.Interfaces.AccountsFinance;
 using VeloPortal.Application.Interfaces.Authentication;
+using VeloPortal.Application.Interfaces.CEM;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Procurement;
@@ -13,6 +14,7 @@ using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.AccountsFinance;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
+using VeloPortal.Infrastructure.Data.Repositories.CEM;
 using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
 using VeloPortal.Infrastructure.Data.Repositories.Procurement;
@@ -138,6 +140,11 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<ISupplierInf, SupplierInfRepository>();
             services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
+            #endregion
+
+
+            #region CEM
+            services.AddScoped<IPrjStdSelection, PrjStdSelectionRepository>();
             #endregion
 
 

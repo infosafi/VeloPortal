@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Domain.Entities.AccountsFinance;
 using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.CEM;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 using VeloPortal.Domain.Entities.Procurement;
@@ -39,6 +40,10 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region Common       
 
+        #endregion
+
+        #region CEM
+        public DbSet<PrjStdSelection> PrjStdSelection { get; set; }
         #endregion
 
         #region FMS
