@@ -91,7 +91,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             }
         }
 
-        public async Task<VendorProfile?> FindUserByVendorEmailAsync(string comcod, string user_type, string vendor_email)
+        public async Task<dynamic?> FindUserByVendorIdAsync(string comcod, string vendor_profile_id)
         {
 
             try
@@ -101,14 +101,14 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     return await Task.FromResult<VendorProfile?>(null);
                 }
 
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_VendorProfile", user_type, vendor_email);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_portal.SP_USER_OPERATION", "Get_VendorProfile", vendor_profile_id ?? "");
 
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
                     return await Task.FromResult<VendorProfile?>(null);
                 }
 
-                var userList = ds.Tables[0].DataTableToList<VendorProfile>();
+                var userList = ds.Tables[0].DataTableToDynamicList();
                 var user = userList?.FirstOrDefault();
 
                 return await Task.FromResult(user);
