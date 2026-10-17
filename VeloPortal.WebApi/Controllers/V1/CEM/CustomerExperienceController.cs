@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VeloPortal.Application.DTOs.CEM;
 using VeloPortal.Application.Interfaces.CEM;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.CEM;
@@ -53,7 +54,7 @@ namespace VeloPortal.WebApi.Controllers.V1.CEM
                 if (response == null)
                     return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { " customer finishing item selections not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
 
-                return Ok(ApiResponse<dynamic>.SuccessResponse(response, message: $"customer finishing item selections loaded successfully. (Data Found: {response.Count()})"));
+                return Ok(ApiResponse<DtoCustFinishItemSelection>.SuccessResponse(response, message: $"customer finishing item selections loaded successfully. (Data Found: {response.Items!.Count()})"));
 
             }
             catch (Exception ex)

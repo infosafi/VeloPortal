@@ -8,6 +8,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VeloPortal.Application.DTOs.CEM;
 using VeloPortal.Application.DTOs.Helper;
 using VeloPortal.Application.Interfaces.CEM;
 using VeloPortal.Application.Settings;
@@ -39,33 +40,35 @@ namespace VeloPortal.Infrastructure.Data.Repositories.CEM
         }
 
 
-        public async Task<IEnumerable<dynamic>?> GetCustomerFinishingItemSelection(string comcod, long? sale_unit_id)
+        public async Task<DtoCustFinishItemSelection?> GetCustomerFinishingItemSelection(string comcod, long? sale_unit_id)
         {
             try
             {
                 if (_spProcessAccess == null)
                 {
                     _logger.LogWarning("_spProcessAccess is not initialized.");
-                    return await Task.FromResult<IEnumerable<dynamic>?>(null);
+                    return await Task.FromResult<DtoCustFinishItemSelection?>(null);
                 }
 
-                IEnumerable<dynamic>? lst = null;
+                DtoCustFinishItemSelection? lst = new();
 
                 DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_cem.SP_CUSTOMER_EXPERIENCE_MGT", "Get_Customer_Finishing_Item_Selection", sale_unit_id.ToString() ?? "");
 
-                if (ds == null)
+                if (ds == null || ds.Tables == null || ds.Tables.Count < 2)
                 {
-                    return await Task.FromResult<IEnumerable<dynamic>?>(null);
+                    return await Task.FromResult<DtoCustFinishItemSelection?>(null);
                 }
 
-                lst = ds.Tables[0].DataTableToDynamicList();
-                return await Task.FromResult<IEnumerable<dynamic>?>(lst);
+                lst.Info = ds.Tables[0].DataTableToDynamicList();
+                lst.Items = ds.Tables[1].DataTableToDynamicList();
+
+                return await Task.FromResult<DtoCustFinishItemSelection?>(lst);
             }
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
                 _logger.LogError(ex, "Customer Finishing Item selection fetch failed");
-                return await Task.FromResult<IEnumerable<dynamic>?>(null);
+                return await Task.FromResult<DtoCustFinishItemSelection?>(null);
             }
         }
 
@@ -87,7 +90,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.CEM
                     else
                     {
                         // Checking if exist or not
-                        var exist = await dbContext.PrjStdSelection.FirstOrDefaultAsync(r => r.proj_items_sel_id == prjStdSelection.proj_items_sel_id);
+                        var exist = await dbContext.PrjStdSelection.FirstOrDefaultAsync(r => r.comcod == prjStdSelection.comcod && r.proj_items_sel_id == prjStdSelection.proj_items_sel_id);
 
                         if (exist == null)
                         {
