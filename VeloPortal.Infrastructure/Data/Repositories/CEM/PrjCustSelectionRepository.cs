@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VeloPortal.Application.DTOs.CEM;
 using VeloPortal.Application.DTOs.Helper;
@@ -19,16 +20,16 @@ using VeloPortal.Infrastructure.Data.SPHelper;
 
 namespace VeloPortal.Infrastructure.Data.Repositories.CEM
 {
-    public class PrjStdSelectionRepository : IPrjStdSelection
+    public class PrjCustSelectionRepository : IPrjCustSelection
     {
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
         private readonly IDbContextFactory<VeloPortalDbContext> _dbLogContextFactory;
-        private readonly ILogger<PrjStdSelectionRepository> _logger;
+        private readonly ILogger<PrjCustSelectionRepository> _logger;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly SPProcessAccess? _spProcessAccess;
 
-        public PrjStdSelectionRepository(IDbContextFactory<VeloPortalDbContext> dbContextFactory, IDbContextFactory<VeloPortalDbContext> dbLogContextFactory, ILogger<PrjStdSelectionRepository> logger, IMapper mapper, IConfiguration configuration)
+        public PrjCustSelectionRepository(IDbContextFactory<VeloPortalDbContext> dbContextFactory, IDbContextFactory<VeloPortalDbContext> dbLogContextFactory, ILogger<PrjCustSelectionRepository> logger, IMapper mapper, IConfiguration configuration)
         {
             _dbContextFactory = dbContextFactory;
             _dbLogContextFactory = dbLogContextFactory;
@@ -73,56 +74,44 @@ namespace VeloPortal.Infrastructure.Data.Repositories.CEM
         }
 
 
-        public async Task<DtoResponseHelper> InsertOrUpdateProjStdItemSelections(List<PrjStdSelection> PrjStdSelection)
+        public async Task<DtoResponseHelper> InsertOrUpdateProjectCustomerSelections(DtoPrjCustSelection obj)
         {
             try
             {
-                using var dbContext = _dbContextFactory.CreateDbContext();
-                await using var transaction = await dbContext.Database.BeginTransactionAsync();
-
-                foreach (var prjStdSelection in PrjStdSelection)
+                if (_spProcessAccess == null)
                 {
-                    if (prjStdSelection.proj_items_sel_id == 0)
-                    {
-                        //Add
-                        dbContext.PrjStdSelection.Add(prjStdSelection);
-                    }
-                    else
-                    {
-                        // Checking if exist or not
-                        var exist = await dbContext.PrjStdSelection.FirstOrDefaultAsync(r => r.comcod == prjStdSelection.comcod && r.proj_items_sel_id == prjStdSelection.proj_items_sel_id);
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
 
-                        if (exist == null)
-                        {
-                            return new DtoResponseHelper
-                            {
-                                IsSuccess = false,
-                                message = "The PrjStd item selection you are trying to update is not exists."
-                            };
-                        }
-
-                        dbContext.Entry(exist).CurrentValues.SetValues(prjStdSelection);
-                    }
+                    throw new Exception("Save failed.");
                 }
 
-                await dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                string json_custitemselreqInf = JsonSerializer.Serialize(obj.CustItemSelReqInf);
+                string json_prjcustselection = JsonSerializer.Serialize(obj.PrjCustSelection);
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(obj.CustItemSelReqInf.comcod ?? "", "itv_cem.SP_CUSTOMER_EXPERIENCE_MGT", "Update_Customer_Item_Selection_Info", json_custitemselreqInf, json_prjcustselection);
+                if (ds == null || ds.Tables.Count == 0)
+                {
+                    _logger.LogWarning("Failed to save gatepass information.");
+
+                    throw new Exception("Save failed.");
+                }
 
                 return new DtoResponseHelper
                 {
                     IsSuccess = true,
-                    message = "Project Standard Item selection Saved Successfully."
+                    message = "Customer Item selection and Project Customer selection Saved Successfully.",
+                    Data = ds.Tables[0].Rows[0]["csrno"].ToString()
                 };
 
             }
             catch (Exception ex)
             {
                 ErrorTrackingExtension.SetError(ex);
-                _logger.LogError(ex, "Project Standard Item selection Insert or Update Failed");
+                _logger.LogError(ex, "Project Customer selection Insert or Update Failed");
                 return new DtoResponseHelper
                 {
                     IsSuccess = false,
-                    message = "Project Standard Item selection  Insert or Update Failed"
+                    message = "Project Customer selection  Insert or Update Failed"
                 };
             }
         }

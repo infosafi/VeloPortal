@@ -144,7 +144,7 @@ namespace VeloPortal.WebApi.Extensions
 
 
             #region CEM
-            services.AddScoped<IPrjStdSelection, PrjStdSelectionRepository>();
+            services.AddScoped<IPrjCustSelection, PrjCustSelectionRepository>();
             #endregion
 
 
