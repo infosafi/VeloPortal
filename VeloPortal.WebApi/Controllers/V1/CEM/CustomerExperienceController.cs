@@ -14,7 +14,7 @@ namespace VeloPortal.WebApi.Controllers.V1.CEM
     [Authorize]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class CustomerExperienceController(IPrjStdSelection _prjStdSelection) : ControllerBase
+    public class CustomerExperienceController(IPrjCustSelection _prjCustSelection) : ControllerBase
     {
         #region Project Standard Item Selection
 
@@ -49,7 +49,7 @@ namespace VeloPortal.WebApi.Controllers.V1.CEM
                     return BadRequest(ApiResponse<string>.FailureResponse(errors, string.Join(", ", errors)));
                 }
 
-                var response = await _prjStdSelection.GetCustomerFinishingItemSelection(comcod!, sale_unit_id);
+                var response = await _prjCustSelection.GetCustomerFinishingItemSelection(comcod!, sale_unit_id);
 
                 if (response == null)
                     return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { " customer finishing item selections not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
@@ -65,26 +65,26 @@ namespace VeloPortal.WebApi.Controllers.V1.CEM
 
 
         /// <summary>
-        /// Save or Update project standard item selections
+        /// Insert or Update project customer selections
         /// </summary>
-        /// <param name="prjstdselections">This the Post body of project standard item selection.</param> 
+        /// <param name="obj"> This the Post body of project customer selection where CustItemSelReqInf and PrjCustSelection data is available.</param> 
         /// <returns>true or false</returns>
-        [HttpPost("save-project-standard-item-selections")]
-        public async Task<IActionResult> SaveProjectStandarditemslections([FromBody] List<PrjStdSelection>? prjstdselections)
+        [HttpPost("save-project-customer-selections")]
+        public async Task<IActionResult> SaveProjectCustomerSlections([FromBody] DtoPrjCustSelection obj)
         {
-            if (prjstdselections == null || prjstdselections.Count() == 0)
+            if (obj == null || obj.PrjCustSelection == null || obj.CustItemSelReqInf == null || obj.PrjCustSelection.Count() == 0)
             {
-                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Empty Payload" }, "Payload should not be null or empty."));
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Empty Payload" }, ErrorTrackingExtension.ErrorMsg ?? "Payload should not be null or empty."));
             }
 
-            var savedstdselection = await _prjStdSelection.InsertOrUpdateProjStdItemSelections(prjstdselections);
+            var response = await _prjCustSelection.InsertOrUpdateProjectCustomerSelections(obj);
 
-            if (!savedstdselection.IsSuccess)
+            if (!response.IsSuccess)
             {
-                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { savedstdselection.message, "Saved Failed" }, savedstdselection.message));
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { response.message, "Saved Failed" }, response.message));
             }
 
-            return Ok(ApiResponse<dynamic>.SuccessResponse(savedstdselection.IsSuccess, "project standard item selections Saved Successfully"));
+            return Ok(ApiResponse<dynamic>.SuccessResponse(response.IsSuccess, "project customer selections and request Saved Successfully"));
         }
         #endregion
     }

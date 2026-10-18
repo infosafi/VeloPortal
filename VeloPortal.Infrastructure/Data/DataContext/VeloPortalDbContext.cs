@@ -44,6 +44,8 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region CEM
         public DbSet<PrjStdSelection> PrjStdSelection { get; set; }
+        public DbSet<PrjCustSelection> PrjCustSelection { get; set; }
+        public DbSet<CustItemSelReqInf> CustItemSelReqInf { get; set; }
         #endregion
 
         #region FMS

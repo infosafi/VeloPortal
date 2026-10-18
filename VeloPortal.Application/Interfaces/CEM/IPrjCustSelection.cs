@@ -9,9 +9,9 @@ using VeloPortal.Domain.Entities.CEM;
 
 namespace VeloPortal.Application.Interfaces.CEM
 {
-    public interface IPrjStdSelection
+    public interface IPrjCustSelection
     {
         Task<DtoCustFinishItemSelection?> GetCustomerFinishingItemSelection(string comcod, long? sale_unit_id);
-        Task<DtoResponseHelper> InsertOrUpdateProjStdItemSelections(List<PrjStdSelection> PrjStdSelection);
+        Task<DtoResponseHelper> InsertOrUpdateProjectCustomerSelections(DtoPrjCustSelection obj);
     }
 }
