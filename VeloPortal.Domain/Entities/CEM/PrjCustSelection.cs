@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 namespace VeloPortal.Domain.Entities.CEM
 {
     [Table("PrjCustSelection", Schema = "itv_cem")]
-    [PrimaryKey(nameof(proj_cust_item_sel_id), nameof(proj_items_sel_id))]
+    [PrimaryKey(nameof(proj_cust_item_sel_id), nameof(fin_item_sel_req_id))]
     public class PrjCustSelection
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long proj_cust_item_sel_id { get; set; }
-        public long proj_items_sel_id { get; set; }
+        public long fin_item_sel_req_id { get; set; }
         public string comcod { get; set; } = string.Empty;
         public long sale_unit_id { get; set; }
         public string rescode { get; set; } = string.Empty;
@@ -25,19 +25,15 @@ namespace VeloPortal.Domain.Entities.CEM
         public bool is_cust_selection { get; set; }
         public bool is_cust_supply { get; set; }
         public string remarks { get; set; } = string.Empty;
-        public bool is_approved { get; set; }
-        public DateTime review_date { get; set; }
-        public int review_by { get; set; }
-        public string review_note { get; set; }
         public DateTime created_date { get; set; }
         public int created_by { get; set; }
 
         public PrjCustSelection() { }
 
-        public PrjCustSelection(long proj_cust_item_sel_id_, long proj_items_sel_id_, string comcod_, bool is_cust_selection_, bool is_cust_supply_, string remarks_, DateTime created_date_, int created_by_, long sale_unit_id_)
+        public PrjCustSelection(long proj_cust_item_sel_id_, long fin_item_sel_req_id_, string comcod_, bool is_cust_selection_, bool is_cust_supply_, string remarks_, DateTime created_date_, int created_by_, long sale_unit_id_)
         {
             this.proj_cust_item_sel_id = proj_cust_item_sel_id_;
-            this.proj_items_sel_id = proj_items_sel_id_;
+            this.fin_item_sel_req_id = fin_item_sel_req_id_;
             this.comcod = comcod_;
             this.is_cust_selection = is_cust_selection_;
             this.is_cust_supply = is_cust_supply_;

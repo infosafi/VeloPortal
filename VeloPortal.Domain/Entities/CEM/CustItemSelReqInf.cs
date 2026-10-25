@@ -22,6 +22,10 @@ namespace VeloPortal.Domain.Entities.CEM
         public DateTime created_date { get; set; }
         public int created_by { get; set; }
         public string req_source { get; set; } = string.Empty;
+        public bool is_approved { get; set; }
+        public DateTime review_date { get; set; }
+        public int review_by { get; set; }
+        public string review_note { get; set; }
         public CustItemSelReqInf() { }
 
         public CustItemSelReqInf(long fin_item_sel_req_id_, string comcod_, long sale_unit_id_, DateTime reqdate_, string remarks_, DateTime created_date_, int created_by_, string req_source_)
