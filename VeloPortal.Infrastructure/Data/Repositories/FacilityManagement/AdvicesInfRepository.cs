@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Data;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.FacilityManagement;
@@ -92,6 +93,36 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
             {
                 ErrorTrackingExtension.SetError(ex.InnerException ?? ex);
                 _logger.LogError(ex, "Advices Info insert/update failed");
+
+                return null;
+            }
+        }
+
+        public async Task<IEnumerable<dynamic>?> GetAdviceInfList(string? comcod, string? fromdate, string? todate, string? rescode, string? type)
+        {
+            try
+            {
+                await Task.Delay(1);
+                if (_spProcessAccess == null)
+                {
+                    _logger.LogWarning("_spProcessAccess is not initialized.");
+                    return null;
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_fms.SP_FACILITY_MGT", "Get_Advise_Info_List", fromdate ?? "", todate ?? "", rescode ?? "", type ?? "");
+                if (ds == null || ds.Tables.Count == 0)
+                {
+                    return null;
+                }
+
+                var result = ds.Tables[0].DataTableToDynamicList();
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Periodic Advice Info list retrieval failed.");
 
                 return null;
             }
