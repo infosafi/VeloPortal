@@ -262,6 +262,31 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             }
         }
 
+        /// <summary>
+        /// Retrieves the Advice Info List.
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="fromdate">From Date ex 01-Jan-2025.</param> 
+        /// <param name="todate">To Date ex 08-Jan-2026.</param> 
+        /// <param name="rescode">This paramter is for rescode, such like 930100101001 </param> 
+        /// <param name="type">This paramter is filter type, such as seen/unseen/all. </param> 
+        /// <returns>Returns a list of Advice Info.</returns>
+
+        [HttpGet("get-advice-list")]
+        public async Task<IActionResult> GetAdviceInfList(string? comcod, string? fromdate, string? todate, string? rescode, string? type = "all")
+        {
+            if (string.IsNullOrEmpty(comcod))
+                return BadRequest("Comcod and rescode are required.");
+
+            var responseData = await _advicesInf.GetAdviceInfList(comcod, fromdate, todate, rescode, type);
+
+            if (responseData == null || !responseData.Any())
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No Advice list is found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occurred"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Advice records successfully"));
+        }
+
         #endregion
     }
 }
