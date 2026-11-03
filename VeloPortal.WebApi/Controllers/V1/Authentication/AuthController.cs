@@ -1,6 +1,9 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Common;
@@ -11,6 +14,7 @@ using VeloPortal.Domain.Entities.SystemConfig;
 using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.WebApi.Helpers;
+using static Azure.Core.HttpHeader;
 
 namespace VeloPortal.WebApi.Controllers.V1.Authentication
 {
@@ -24,12 +28,14 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         private readonly IPortalAuthUser _userRepo;
         private readonly IPassRecovery _passRecovery;
         private readonly IVendorProfile _vendorprofile;
+        private readonly ILoginLogs _loginlogs;
 
-        public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo,
+        public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo, ILoginLogs loginlogs,
             IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile)
         {
             _jwtService = jwtService;
             _refreshRepo = refreshRepo;
+            _loginlogs = loginlogs;
             _userRepo = userRepo;
             _passRecovery = passRecovery;
             _vendorprofile = vendorprofile;
@@ -39,24 +45,23 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [HttpPost("portal-login")]
         public async Task<IActionResult> Login(DtoPortalAuthUser dto)
         {
-            if (dto.comcod.Length == 0)
+            if (dto.comcod?.Length == 0)
             {
-
                 return BadRequest(new { Success = false, message = "Company Selection is missing!" });
-
             }
-            if (dto.user_or_email.Length == 0)
+            if (dto.user_or_email?.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Username or Email Mandatory!" });
-
             }
-            if (dto.password.Length == 0)
+            if (dto.password?.Length == 0)
             {
                 return BadRequest(new { Success = false, message = "Password Mandatory!" });
-
             }
-            string encpassword = EncryptionExtension.PasswordEnc(dto.password);
-            var user = await _userRepo.ValidateCredentialsAsync(dto.comcod, dto.user_type, dto.user_or_email, encpassword);
+
+            string encpassword = EncryptionExtension.PasswordEnc(dto.password ?? "");
+
+            var user = await _userRepo.ValidateCredentialsAsync(dto.comcod ?? "", dto.user_type ?? "", dto.user_or_email ?? "", encpassword);
+
             if (user == null)
             {
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
@@ -76,6 +81,24 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 user_id = user.unq_id
             });
 
+            string sessionid = GenerateSessionId(user.unq_id, dto.comcod ?? "");
+
+            LoginLogs loginLogs = new LoginLogs();
+            loginLogs.userid = user.unq_id;
+            loginLogs.comcod = dto.comcod ?? "";
+            loginLogs.username_or_email = dto.user_or_email ?? "";
+            loginLogs.login_status = true;
+            loginLogs.failure_reason = "";
+            loginLogs.ip_address = dto.ip_address ?? "";
+            loginLogs.user_agent = dto.user_agent ?? "";
+            loginLogs.mac_address = dto.macaddress ?? "";
+            loginLogs.remarks = dto.user_type ?? "";
+            loginLogs.usession_id = sessionid;
+            loginLogs.location = dto.location ?? "";
+            loginLogs.attempt_time = DateTimeExtensions.GetLocalTimeFromBaseOnTimeZone();
+
+            await _loginlogs.InsertOrUpdateLoginLogs(loginLogs, HelperEnums.Action.Add.ToString());
+
             return Ok(new
             {
                 accessToken,
@@ -85,6 +108,59 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 message = "Successfully Logged In"
             });
         }
+
+
+        public static string GenerateSessionId(int userId, string comcod)
+        {
+            // Generate a random number
+            byte[] randomBytes = new byte[16];
+            RandomNumberGenerator.Fill(randomBytes);
+            string randomString = Convert.ToBase64String(randomBytes).Replace("/", "_").Replace("+", "-");
+
+            // Combine with userId and comcod
+            string input = $"{randomString}{userId}{comcod}";
+
+            // Hash to create a unique, fixed-length SessionID
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+                return Convert.ToBase64String(hashBytes).Replace("/", "_").Replace("+", "-").Substring(0, 16);
+            }
+        }
+
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(DtoJwtToken dto)
+        {
+            var storedToken = await _refreshRepo.GetByTokenAsync(dto.RefreshToken);
+
+            if (storedToken == null || storedToken.is_revoked || storedToken.expires < DateTime.UtcNow)
+                return Unauthorized();
+
+            var user = await _userRepo.GetUserInfoByIdRole(dto.comcod ?? "", dto.user_type ?? "", Convert.ToString(storedToken.user_id), dto.user_role ?? "");
+            var newAccessToken = _jwtService.GenerateAccessToken(user);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
+
+            storedToken.is_revoked = true;
+            await _refreshRepo.RevokeAsync(dto.RefreshToken);
+
+            if (user != null)
+            {
+                await _refreshRepo.SaveAsync(new RefreshToken
+                {
+                    token = newRefreshToken,
+                    expires = DateTime.UtcNow.AddDays(7),
+                    user_id = user.unq_id
+                });
+
+                return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
+            }
+            else
+            {
+                return Ok(new { message = "Token not refreshed" });
+            }
+        }
+
 
         [HttpGet("get-company-list")]
         public async Task<IActionResult> GetAllCompanyInfoList(bool? is_active)
@@ -200,40 +276,6 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
-
-        //[HttpPost("refresh")]
-        //public async Task<IActionResult> Refresh(DtoJwtToken dto)
-        //{
-        //    var storedToken = await _refreshRepo.GetByTokenAsync(dto.RefreshToken);
-        //    if (storedToken == null || storedToken.is_revoked || storedToken.expires < DateTime.UtcNow)
-        //        return Unauthorized();
-
-
-        //    var user = await _userRepo.GetUserInfoByIdAsync(Convert.ToInt32(storedToken.user_id));
-        //    var newAccessToken = _jwtService.GenerateAccessToken(user);
-        //    var newRefreshToken = _jwtService.GenerateRefreshToken();
-
-        //    storedToken.is_revoked = true;
-        //    await _refreshRepo.RevokeAsync(dto.RefreshToken);
-
-        //    if (user != null)
-        //    {
-        //        await _refreshRepo.SaveAsync(new RefreshToken
-        //        {
-        //            token = newRefreshToken,
-        //            expires = DateTime.UtcNow.AddDays(7),
-        //            user_id = user.unq_id
-        //        });
-        //        return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
-
-        //    }
-        //    else
-        //    {
-        //        return Ok(new { message = "Token not refreshed" });
-        //    }
-
-
-        //}
 
         /// <summary>
         /// Sends a 6-digit OTP to the user's email for password recovery.

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Application.Interfaces.AccountsFinance;
 using VeloPortal.Application.Interfaces.Authentication;
+using VeloPortal.Application.Interfaces.CEM;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Procurement;
@@ -13,6 +14,7 @@ using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.Repositories.AccountsFinance;
 using VeloPortal.Infrastructure.Data.Repositories.Authentication;
+using VeloPortal.Infrastructure.Data.Repositories.CEM;
 using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
 using VeloPortal.Infrastructure.Data.Repositories.Procurement;
@@ -91,10 +93,13 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IFtpService, FtpService>();
 
             #region System configuration Service add
+            services.AddScoped<IAppManagement, AppManagementRepository>();
             services.AddScoped<IIndustries, IndustriesRepository>();
             services.AddScoped<IResCodeInf, ResCodeInfRepository>();
             services.AddScoped<IAccCodeInf, AccCodeInfRepository>();
             services.AddScoped<ISysGenInf, SysGenInfRepository>();
+            services.AddScoped<IComApiInf, ComApiInfRepository>();
+            services.AddScoped<IMessagelog, MessagelogRepository>();
             #endregion
 
             #region start Project Management Service add
@@ -105,11 +110,13 @@ namespace VeloPortal.WebApi.Extensions
             #region Sales Service add
             services.AddScoped<IMoneyRcptPmnt, MoneyReceiptRepository>();
             services.AddScoped<ISalesReport, SalesReportRepository>();
+            services.AddScoped<ICustomerInf, CustomerInfRepository>();
             #endregion
 
             #region start Authentication Service add
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
             services.AddScoped<IPassRecovery, PassRecoveryRepository>();
+            services.AddScoped<ILoginLogs, LoginLogsRepository>();
             #endregion
 
             #region start AcccountsFinance Service add
@@ -122,6 +129,7 @@ namespace VeloPortal.WebApi.Extensions
 
             #region start Service Request add
             services.AddScoped<IServReqInf, ServReqInfRepository>();
+            services.AddScoped<IAdvicesInf, AdvicesInfRepository>();
             #endregion
 
             #region start Vendor add
@@ -133,6 +141,13 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPurRFQInf, PurRFQInfRepository>();
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
+
+
+            #region CEM
+            services.AddScoped<IPrjCustSelection, PrjCustSelectionRepository>();
+            #endregion
+
+
             return services;
         }
     }

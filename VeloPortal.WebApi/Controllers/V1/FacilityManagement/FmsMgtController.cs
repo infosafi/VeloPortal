@@ -17,13 +17,13 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
     public class FmsMgtController : ControllerBase
     {
         private readonly IServReqInf _servReqInf;
+        private readonly IAdvicesInf _advicesInf;
         private readonly IReservationInf _reservationInf;
 
-
-        public FmsMgtController(
-            IServReqInf servReqInf, IReservationInf reservationInf)
+        public FmsMgtController(IServReqInf servReqInf, IAdvicesInf advicesInf, IReservationInf reservationInf)
         {
             _servReqInf = servReqInf;
+            _advicesInf = advicesInf;
             _reservationInf = reservationInf;
         }
 
@@ -233,6 +233,63 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             }
             return Ok(ApiResponse<bool>.SuccessResponse(updatedSerReqInf, message: "Service request info updated successfully"));
         }
+
+        #region Advice Information
+
+        /// <summary>
+        /// Save/Update Advice Information
+        /// </summary>
+        /// <param name="advices">This the Post body Advice Information</param>     
+        /// <returns>Advice Information</returns>
+
+        [HttpPost("update-advices-info")]
+        public async Task<IActionResult> InsertOrUpdateAdvicesInf([FromBody] List<AdvicesInf> advices)
+        {
+            try
+            {
+                var result = await _advicesInf.InsertOrUpdateAdvicesInf(advices);
+
+                if (result == null)
+                {
+                    var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Bulk Import Advice Information"));
+                }
+
+                return Ok(ApiResponse<List<AdvicesInf>>.SuccessResponse(result, message: "Bulk Import Advice Information Save Successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Advice Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the Advice Info List.
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="fromdate">From Date ex 01-Jan-2025.</param> 
+        /// <param name="todate">To Date ex 08-Jan-2026.</param> 
+        /// <param name="rescode">This paramter is for rescode, such like 930100101001 </param> 
+        /// <param name="type">This paramter is filter type, such as seen/unseen/all. </param> 
+        /// <returns>Returns a list of Advice Info.</returns>
+
+        [HttpGet("get-advice-list")]
+        public async Task<IActionResult> GetAdviceInfList(string? comcod, string? fromdate, string? todate, string? rescode, string? type = "all")
+        {
+            if (string.IsNullOrEmpty(comcod))
+                return BadRequest("Comcod and rescode are required.");
+
+            var responseData = await _advicesInf.GetAdviceInfList(comcod, fromdate, todate, rescode, type);
+
+            if (responseData == null || !responseData.Any())
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No Advice list is found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occurred"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Advice records successfully"));
+        }
+
+        #endregion
 
         #region Reservation Desk
 

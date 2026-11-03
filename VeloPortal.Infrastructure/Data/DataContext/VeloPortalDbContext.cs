@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using VeloPortal.Domain.Entities.AccountsFinance;
 using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.CEM;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 using VeloPortal.Domain.Entities.Procurement;
+using VeloPortal.Domain.Entities.Sales;
 using VeloPortal.Domain.Entities.SystemConfig;
 
 namespace VeloPortal.Infrastructure.Data.DataContext
@@ -22,22 +24,36 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         public DbSet<SysGenInf> SysGenInf { get; set; }
         public DbSet<CompanyInf> CompanyInf { get; set; }
         public DbSet<Industries> Industries { get; set; }
+        public DbSet<ComApiInf> ComApiInf { get; set; }
+        public DbSet<Messagelog> Messagelog { get; set; }
         #endregion
+
         #region Authentication
         public DbSet<PassRecovery> PassRecovery { get; set; }
         public DbSet<VendorProfile> VendorProfile { get; set; }
         public DbSet<SupportUser> SupportUsers { get; set; }
         #endregion
+
         #region AccountsFinance
         public DbSet<FinCompReq> FinCompReq { get; set; }
         #endregion
+
         #region Common       
 
         #endregion
+
+        #region CEM
+        public DbSet<PrjStdSelection> PrjStdSelection { get; set; }
+        public DbSet<PrjCustSelection> PrjCustSelection { get; set; }
+        public DbSet<CustItemSelReqInf> CustItemSelReqInf { get; set; }
+        #endregion
+
         #region FMS
         public DbSet<ServReqInf> ServReqInf { get; set; }
         public DbSet<ReservationInf> ReservationInf { get; set; }
+        public DbSet<AdvicesInf> AdvicesInf { get; set; }
         #endregion
+
         #region Documentation
         public DbSet<DocInfDet> DocInfDet { get; set; }
         #endregion
@@ -45,6 +61,11 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #region Vendor
         public DbSet<VendorSuply> VendorSuply { get; set; }
         #endregion
+
+        #region Sales
+        public DbSet<CustomerInf> CustomerInf { get; set; }
+        #endregion
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

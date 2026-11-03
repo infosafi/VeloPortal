@@ -6,9 +6,7 @@ using VeloPortal.Infrastructure.Data.DataContext;
 
 namespace VeloPortal.Infrastructure.Service
 {
-    public class RefreshTokenService(IDbContextFactory<VeloPortalLogContext> _dbContextFactory,
-    ILogger<RefreshTokenService> _logger
-   ) : IRefreshTokenService
+    public class RefreshTokenService(IDbContextFactory<VeloPortalLogContext> _dbContextFactory, ILogger<RefreshTokenService> _logger) : IRefreshTokenService
     {
         public async Task<RefreshToken?> GetByTokenAsync(string? token)
         {
@@ -16,12 +14,13 @@ namespace VeloPortal.Infrastructure.Service
             {
                 using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
-                    var result = await dbContext.RefreshToken
-                 .FirstOrDefaultAsync(rt => rt.token == token);
+                    var result = await dbContext.RefreshToken.FirstOrDefaultAsync(rt => rt.token == token);
+
                     if (result == null)
                     {
                         return null;
                     }
+
                     return result;
                 }
             }
@@ -37,8 +36,7 @@ namespace VeloPortal.Infrastructure.Service
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
-                var refreshToken = await dbContext.RefreshToken
-            .FirstOrDefaultAsync(rt => rt.token == token);
+                var refreshToken = await dbContext.RefreshToken.FirstOrDefaultAsync(rt => rt.token == token);
 
                 if (refreshToken != null)
                 {

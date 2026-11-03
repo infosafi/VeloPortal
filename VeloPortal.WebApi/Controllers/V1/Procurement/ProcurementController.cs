@@ -33,9 +33,15 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
         /// Retrieves the full profile of a vendor by email.
         /// </summary>
         [HttpGet("get-vendor-profile")]
-        public async Task<IActionResult> GetVendorProfile(string comcod, string vendor_email)
+        public async Task<IActionResult> GetVendorProfile(string comcod, string? vendor_profile_id)
         {
-            var user = await _vendorprofile.FindUserByVendorEmailAsync(comcod, "Vendor", vendor_email);
+            if (string.IsNullOrEmpty(vendor_profile_id))
+            {
+                return BadRequest(ApiResponse<dynamic>.FailureResponse(new List<string> { "Vendor profile id is required" }));
+            }
+
+
+            var user = await _vendorprofile.FindUserByVendorIdAsync(comcod, vendor_profile_id);
             if (user == null)
                 return NotFound(new { Success = false, message = "Profile not found." });
 
