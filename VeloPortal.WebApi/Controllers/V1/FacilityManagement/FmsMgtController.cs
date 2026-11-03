@@ -236,40 +236,6 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
 
         #region Reservation Desk
 
-        ///// <summary>
-        ///// Save/Update Reservation Information
-        ///// </summary>
-        ///// <param name="obj">This the Post body Reservation Information</param>     
-        ///// <returns>Reservation Information</returns>
-
-        //[HttpPost("update-reservation-info")]
-        //public async Task<IActionResult> InsertOrUpdateReservationInf([FromBody] ReservationInf obj)
-        //{
-        //    try
-        //    {
-        //        if (obj == null)
-        //        {
-        //            return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "Invalid request body." }, "Bad Request"));
-        //        }
-
-        //        var result = await _reservationInf.InsertOrUpdateReservationInf(obj);
-
-        //        if (result == null)
-        //        {
-        //            var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
-        //            return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Bulk Import Reservation Information"));
-        //        }
-
-        //        return Ok(ApiResponse<ReservationInf>.SuccessResponse(result, message: "Bulk Import Reservation Information Save Successfully"));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError,
-        //            ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Reservation Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
-        //    }
-        //}
-
-
         /// <summary>
         /// Retrieves the Reservation Information List.
         /// </summary>
@@ -293,6 +259,41 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
 
             return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Reservation Information records successfully"));
         }
+
+
+        /// <summary>
+        /// Save/Update Reservation Information
+        /// </summary>
+        /// <param name="obj">This the Post body Reservation Information</param>     
+        /// <returns>Reservation Information</returns>
+
+        [HttpPost("update-reservation-info")]
+        public async Task<IActionResult> InsertOrUpdateReservationInf([FromBody] ReservationInf obj)
+        {
+            try
+            {
+                if (obj == null)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "Invalid request body." }, "Bad Request"));
+                }
+
+                var result = await _reservationInf.InsertOrUpdateReservationInf(obj);
+
+                if (result == null)
+                {
+                    var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Bulk Import Reservation Information"));
+                }
+
+                return Ok(ApiResponse<ReservationInf>.SuccessResponse(result, message: "Bulk Import Reservation Information Save Successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Reservation Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
+            }
+        }
+
 
         #endregion
     }
