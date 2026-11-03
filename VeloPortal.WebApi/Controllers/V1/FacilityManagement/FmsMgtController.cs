@@ -18,11 +18,13 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
     {
         private readonly IServReqInf _servReqInf;
         private readonly IAdvicesInf _advicesInf;
+        private readonly IReservationInf _reservationInf;
 
-        public FmsMgtController(IServReqInf servReqInf, IAdvicesInf advicesInf)
+        public FmsMgtController(IServReqInf servReqInf, IAdvicesInf advicesInf, IReservationInf reservationInf)
         {
             _servReqInf = servReqInf;
             _advicesInf = advicesInf;
+            _reservationInf = reservationInf;
         }
 
         /// <summary>
@@ -286,6 +288,69 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
 
             return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Advice records successfully"));
         }
+
+        #endregion
+
+        #region Reservation Desk
+
+        /// <summary>
+        /// Retrieves the Reservation Information List.
+        /// </summary>
+        /// <param name="comcod">This the Company Code, such like 11001.</param>
+        /// <param name="fromDate">From Date ex 01-Jan-2025.</param> 
+        /// <param name="toDate">To Date ex 30-Dec-2026.</param> 
+        /// <param name="acccode">This paramter is for rescode, such like 160010010001 </param> 
+        /// <returns>Returns a list of Reservation Information.</returns>
+
+        [HttpGet("get-reservation-list")]
+        public async Task<IActionResult> GetReservationInfList(string? comcod, string? fromDate, string? toDate, string? acccode)
+        {
+            if (string.IsNullOrEmpty(comcod))
+                return BadRequest("Comcod and rescode are required.");
+
+            var responseData = await _reservationInf.GetReservationInfList(comcod, fromDate, toDate, acccode);
+
+            if (responseData == null || !responseData.Any())
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No Reservation Information list is found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occurred"));
+
+            return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Reservation Information records successfully"));
+        }
+
+
+        /// <summary>
+        /// Save/Update Reservation Information
+        /// </summary>
+        /// <param name="obj">This the Post body Reservation Information</param>     
+        /// <returns>Reservation Information</returns>
+
+        [HttpPost("update-reservation-info")]
+        public async Task<IActionResult> InsertOrUpdateReservationInf([FromBody] ReservationInf obj)
+        {
+            try
+            {
+                if (obj == null)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "Invalid request body." }, "Bad Request"));
+                }
+
+                var result = await _reservationInf.InsertOrUpdateReservationInf(obj);
+
+                if (result == null)
+                {
+                    var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Bulk Import Reservation Information"));
+                }
+
+                return Ok(ApiResponse<ReservationInf>.SuccessResponse(result, message: "Bulk Import Reservation Information Save Successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Reservation Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
+            }
+        }
+
 
         #endregion
     }
