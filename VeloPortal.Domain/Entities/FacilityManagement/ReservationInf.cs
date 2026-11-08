@@ -33,6 +33,9 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public DateTime review_date { get; set; }
         public int review_by { get; set; }
         public string review_note { get; set; } = string.Empty;
+        public string host_type { get; set; } = string.Empty;
+        public long booking_host { get; set; }
+        public decimal booking_fee { get; set; }
 
         public ReservationInf() { }
         public ReservationInf(long room_booking_id_, string comcod_, string acccode_, string rescode_, string requester_role_, DateTime reqdate_, DateTime fromdate_, DateTime todate_, string purpose_, string remarks_, int presense_, string reqsource_, bool is_approved_, bool is_cancel_, DateTime created_date_, long created_by_, DateTime review_date_, int review_by_, string review_note_)
