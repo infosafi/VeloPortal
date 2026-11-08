@@ -78,11 +78,10 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 var toDate = obj.todate != default ? obj.todate : DateTime.UtcNow;
 
                 var existingData = await dbContext.ReservationInf.FirstOrDefaultAsync(a => a.room_booking_id == obj.room_booking_id);
-                var existingRoomBookingId = existingData?.room_booking_id;
+                bool datesChanged = existingData == null || existingData.fromdate != fromDate || existingData.todate != toDate;
 
-                var hasOverlap = await dbContext.ReservationInf.AnyAsync(r => r.room_booking_id != existingRoomBookingId && r.comcod == obj.comcod && r.acccode == obj.acccode &&
-                                                                              r.is_cancel == false && r.fromdate < toDate && fromDate < r.todate);
-                if (hasOverlap)
+                if (datesChanged && await dbContext.ReservationInf.AnyAsync(r => r.comcod == obj.comcod && r.acccode == obj.acccode
+                    && r.rescode == obj.rescode && r.is_cancel == false && r.fromdate < toDate && fromDate < r.todate))
                 {
                     throw new Exception($"A reservation already exists for this time slot ({fromDate} – {toDate}). Please choose a different time range.");
                 }
@@ -96,6 +95,13 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     existingData.presense = obj.presense;
                     existingData.is_cancel = obj.is_cancel;
                     existingData.is_approved = obj.is_approved;
+                    existingData.host_type = obj.host_type;
+                    existingData.acccode = obj.acccode;
+                    existingData.rescode = obj.rescode;
+                    existingData.booking_fee = obj.booking_fee;
+                    existingData.review_by = obj.review_by;
+                    existingData.review_date = obj.review_date;
+                    existingData.review_note = obj.review_note;
 
                     await dbContext.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -121,7 +127,10 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     created_by = obj.created_by,
                     review_date = obj.review_date != default ? obj.review_date : DateTime.UtcNow,
                     review_by = obj.review_by,
-                    review_note = obj.review_note
+                    review_note = obj.review_note,
+                    host_type = obj.host_type,
+                    booking_host = obj.booking_host,
+                    booking_fee = obj.booking_fee
                 };
 
                 await dbContext.ReservationInf.AddAsync(newData);
