@@ -74,18 +74,21 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             if (user == null)
             {
+                await LogLoginAttemptAsync(dto, 0, false, "Invalid credentials", "");
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
             if (user.unq_id == 0)
             {
+                await LogLoginAttemptAsync(dto, 0, false, "Invalid credentials", "");
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
 
-            // Vendors self-register: only approved, non-held vendors may obtain a token.
+            // Vendors self-register: only e-mail verified, non-held vendors may obtain a token.
             if (string.Equals(dto.user_type?.Trim(), "vendor", StringComparison.OrdinalIgnoreCase))
             {
                 if (!await _vendorprofile.IsVendorLoginAllowedAsync(dto.comcod ?? "", user.unq_id))
                 {
+                    await LogLoginAttemptAsync(dto, user.unq_id, false, "Vendor email not verified or on hold", "");
                     return Unauthorized(new { Success = false, message = "Account email is not verified or the account is on hold.", twofactor = false });
                 }
             }
@@ -102,21 +105,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             string sessionid = GenerateSessionId(user.unq_id, dto.comcod ?? "");
 
-            LoginLogs loginLogs = new LoginLogs();
-            loginLogs.userid = user.unq_id;
-            loginLogs.comcod = dto.comcod ?? "";
-            loginLogs.username_or_email = dto.user_or_email ?? "";
-            loginLogs.login_status = true;
-            loginLogs.failure_reason = "";
-            loginLogs.ip_address = dto.ip_address ?? "";
-            loginLogs.user_agent = dto.user_agent ?? "";
-            loginLogs.mac_address = dto.macaddress ?? "";
-            loginLogs.remarks = dto.user_type ?? "";
-            loginLogs.usession_id = sessionid;
-            loginLogs.location = dto.location ?? "";
-            loginLogs.attempt_time = DateTimeExtensions.GetLocalTimeFromBaseOnTimeZone();
-
-            await _loginlogs.InsertOrUpdateLoginLogs(loginLogs, HelperEnums.Action.Add.ToString());
+            await LogLoginAttemptAsync(dto, user.unq_id, true, "", sessionid);
 
             return Ok(new
             {
@@ -128,6 +117,47 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             });
         }
 
+
+        /// <summary>Real client address as seen by the server (the client-sent value can be empty or forged).
+        /// Behind a reverse proxy the right-most X-Forwarded-For entry (added by our own proxy) is used.</summary>
+        private string ServerClientIp()
+        {
+            var xff = Request.Headers["X-Forwarded-For"].ToString();
+            if (!string.IsNullOrWhiteSpace(xff))
+            {
+                var last = xff.Split(',').Select(s => s.Trim()).LastOrDefault(s => s.Length > 0);
+                if (!string.IsNullOrEmpty(last)) return Clip(last, 45);
+            }
+            return Clip(HttpContext.Connection.RemoteIpAddress?.ToString(), 45);
+        }
+
+        /// <summary>Writes a login attempt (success or failure) with server-side IP and User-Agent.</summary>
+        private async Task LogLoginAttemptAsync(DtoPortalAuthUser dto, int userId, bool ok, string reason, string sessionId)
+        {
+            try
+            {
+                var logs = new LoginLogs
+                {
+                    userid = userId,
+                    comcod = Clip(dto.comcod, 5),
+                    username_or_email = Clip(dto.user_or_email, 100),
+                    login_status = ok,
+                    failure_reason = Clip(reason, 100),
+                    ip_address = ServerClientIp(),
+                    user_agent = Clip(Request.Headers.UserAgent.ToString(), 250),
+                    mac_address = dto.macaddress ?? "",
+                    remarks = dto.user_type ?? "",
+                    usession_id = sessionId,
+                    location = dto.location ?? "",
+                    attempt_time = DateTimeExtensions.GetLocalTimeFromBaseOnTimeZone()
+                };
+                await _loginlogs.InsertOrUpdateLoginLogs(logs, HelperEnums.Action.Add.ToString());
+            }
+            catch
+            {
+                // logging must never break the login flow
+            }
+        }
 
         public static string GenerateSessionId(int userId, string comcod)
         {
