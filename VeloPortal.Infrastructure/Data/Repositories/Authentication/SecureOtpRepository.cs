@@ -50,14 +50,22 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 using var db = _factory.CreateDbContext();
                 var now = DateTime.Now;
 
-                var open = await db.SecureLoginInf
-                    .Where(x => x.comcod == comcod && x.user_id == vendorProfileId &&
-                                x.user_type == VendorSignupType && x.execution_date == Unused)
+                // No date comparison inside the SQL (the table uses smalldatetime): fetch this user's latest
+                // rows by key only and decide "unused" in memory.
+                var latest = await db.SecureLoginInf
+                    .Where(x => x.comcod == comcod && x.user_id == vendorProfileId && x.user_type == VendorSignupType)
+                    .OrderByDescending(x => x.secure_login_id)
+                    .Take(20)
                     .ToListAsync();
+                var open = latest.Where(x => x.execution_date == Unused).ToList();
 
                 // resend cooldown
+                // (create_date is a smalldatetime, i.e. rounded to the minute, so the effective wait can be up to ~90s)
                 if (open.Any(x => x.create_date > now.AddSeconds(-CooldownSeconds)))
+                {
+                    _logger.LogWarning("Signup OTP NOT issued for vendor {VendorId}: resend cooldown still active", vendorProfileId);
                     return null;
+                }
 
                 // a new code invalidates every older unused one
                 foreach (var o in open) o.execution_date = now;
@@ -96,11 +104,13 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
                 using var db = _factory.CreateDbContext();
                 var now = DateTime.Now;
 
-                var rec = await db.SecureLoginInf
-                    .Where(x => x.comcod == comcod && x.user_id == vendorProfileId &&
-                                x.user_type == VendorSignupType && x.execution_date == Unused)
+                var latest = await db.SecureLoginInf
+                    .Where(x => x.comcod == comcod && x.user_id == vendorProfileId && x.user_type == VendorSignupType)
                     .OrderByDescending(x => x.secure_login_id)
-                    .FirstOrDefaultAsync();
+                    .Take(20)
+                    .ToListAsync();
+                // newest row that has not been used yet (execution_date still 1900-01-01)
+                var rec = latest.FirstOrDefault(x => x.execution_date == Unused);
 
                 if (rec == null) return OtpVerifyResult.NotFound;
 
