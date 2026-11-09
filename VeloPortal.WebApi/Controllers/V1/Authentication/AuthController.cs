@@ -348,25 +348,22 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [AllowAnonymous]
         public async Task<IActionResult> VerifySignupOtp([FromBody] DtoVerifySignupOtp dto)
         {
-            var generic = BadRequest(new { Success = false, message = "Invalid or expired verification code." });
+            // One identical answer for every failure (unknown e-mail, already verified, wrong/expired code, too many
+            // attempts) so the endpoint cannot be used to find out which e-mail addresses have a vendor account.
+            var generic = BadRequest(new { Success = false, message = "Invalid or expired verification code. If needed, request a new code." });
             if (string.IsNullOrWhiteSpace(dto.comcod) || string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.otp))
                 return generic;
 
             var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
-            if (vendor == null) return generic;
-            if (vendor.is_email_verify == true)
-                return Ok(new { Success = true, message = "Email already verified." });
+            if (vendor == null || vendor.is_email_verify == true) return generic;
 
             var res = await _secureOtp.VerifyVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, dto.otp);
-            if (res == OtpVerifyResult.TooManyAttempts)
-                return StatusCode(StatusCodes.Status429TooManyRequests,
-                    new { Success = false, message = "Too many wrong attempts. Please request a new code." });
             if (res != OtpVerifyResult.Ok) return generic;
 
             if (!await _vendorprofile.SetEmailVerifiedAsync(vendor.comcod, vendor.vendor_profile_id))
                 return StatusCode(500, new { Success = false, message = "Could not complete verification. Please try again." });
 
-            return Ok(new { Success = true, message = "Email verified. Please wait for account approval." });
+            return Ok(new { Success = true, message = "Email verified. You can now log in." });
         }
 
         /// <summary>Sends a new signup verification code (60s cooldown). Always answers the same way.</summary>
