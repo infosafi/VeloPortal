@@ -59,14 +59,16 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Authentication
             }
         }
 
-        public async Task<PassRecovery?> GetLatestOtpAsync(string? otp)
+        public async Task<PassRecovery?> GetLatestForUserAsync(int userId, string email)
         {
             try
             {
                 using (var dbContext = _dbContextFactory.CreateDbContext())
                 {
-                    return await dbContext.PassRecovery.FirstOrDefaultAsync(p => p.recovery_otp == otp);
-
+                    return await dbContext.PassRecovery
+                        .Where(p => p.user_id == userId && p.user_email == email)
+                        .OrderByDescending(p => p.recover_id)
+                        .FirstOrDefaultAsync();
                 }
             }
             catch (Exception ex)

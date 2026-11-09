@@ -10,5 +10,8 @@ namespace VeloPortal.Application.Interfaces.Procurement
         Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code);
         Task<dynamic?> FindUserByVendorIdAsync(string comcod, string vendor_profile_id);
         Task<VendorProfile> InsertOrUpdateVendor(VendorProfile obj, string action);
+        Task<bool> IsVendorLoginAllowedAsync(string comcod, long vendorProfileId);
+        Task<VendorProfile?> FindVendorByEmailAsync(string comcod, string email);
+        Task<bool> SetEmailVerifiedAsync(string comcod, long vendorProfileId);
     }
 }

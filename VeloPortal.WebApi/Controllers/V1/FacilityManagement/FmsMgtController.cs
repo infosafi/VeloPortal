@@ -13,9 +13,16 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    [Authorize]
+    [Authorize(Policy = "NonVendorUser")]
     public class FmsMgtController : ControllerBase
     {
+        // ---- Identity always comes from the server-issued JWT, never from the request body/query ----
+        private string TokComcod => User.FindFirst("comcod")?.Value ?? "";
+        private string TokUserType => User.FindFirst("user_type")?.Value ?? "";
+        private string TokRole => User.FindFirst("user_role")?.Value ?? "";
+        private int TokUserId => int.TryParse(User.FindFirst("sub")?.Value, out var id) ? id : 0;
+        private bool IsCustomer => TokUserType == "customer";
+
         private readonly IServReqInf _servReqInf;
         private readonly IAdvicesInf _advicesInf;
         private readonly IReservationInf _reservationInf;
@@ -43,7 +50,7 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
                 {
                     return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { }, "service_req_id Should not Empty or null"));
                 }
-                var response = await _servReqInf.GetSingleServiceRequestDetailsInformation(comcod, service_req_id);
+                var response = await _servReqInf.GetSingleServiceRequestDetailsInformation(TokComcod, service_req_id);
 
                 if (response == null)
                     return NotFound(ApiResponse<dynamic>.FailureResponse(new List<string> { "Single service details info not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
@@ -92,7 +99,8 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         [HttpGet("get-portal-users-service-requests")]
         public async Task<IActionResult> GetPortalUsersServiceRequestsList(string? comcod, string user_role, string unq_id)
         {
-            var response = await _servReqInf.GetPortalUsersServiceRequests(comcod, user_role, unq_id);
+            if (TokUserId == 0 || string.IsNullOrEmpty(TokRole)) return Forbid();
+            var response = await _servReqInf.GetPortalUsersServiceRequests(TokComcod, TokRole, TokUserId.ToString());
 
             if (response == null)
                 return NotFound(ApiResponse<string>.FailureResponse(
@@ -115,7 +123,8 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         [HttpGet("get-user-concern-projects")]
         public async Task<IActionResult> GetUserConcernProjectsList(string? comcod, string user_role, string unq_id)
         {
-            var response = await _servReqInf.GetUserConcernProjects(comcod, user_role, unq_id);
+            if (TokUserId == 0 || string.IsNullOrEmpty(TokRole)) return Forbid();
+            var response = await _servReqInf.GetUserConcernProjects(TokComcod, TokRole, TokUserId.ToString());
 
             if (response == null)
                 return NotFound(ApiResponse<string>.FailureResponse(
@@ -135,8 +144,35 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         [HttpPost("save-service-request-info")]
         public async Task<IActionResult> SaveLeadPreference([FromBody] ServReqInf servReqInf)
         {
+            if (TokUserId == 0 || string.IsNullOrEmpty(TokComcod)) return Forbid();
+
+            // Free-text length caps (mass-assignment / junk / stored-XSS payload size)
+            if ((servReqInf.complain_details?.Length ?? 0) > 2000 || (servReqInf.special_notes?.Length ?? 0) > 1000 ||
+                (servReqInf.customer_feedback?.Length ?? 0) > 1000)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string>(), "Text field too long"));
+            if (servReqInf.satisfaction < 0 || servReqInf.satisfaction > 5)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string>(), "Invalid satisfaction value"));
+
+            // Overwrite every identity / state field server-side
+            servReqInf.comcod = TokComcod;
+
             if (servReqInf.service_req_id == 0)
             {
+                servReqInf.created_by = TokUserId;
+                servReqInf.creator_role = TokUserType;
+                servReqInf.created_date = DateTime.Now;
+                servReqInf.is_done = false;
+                servReqInf.current_step = string.Empty;
+                servReqInf.customer_feedback = string.Empty;
+                servReqInf.satisfaction = 0;
+                servReqInf.is_canceled = false;
+                servReqInf.is_canceled_by = 0;
+                servReqInf.is_cancel_date = new DateTime(1900, 1, 1);
+                servReqInf.is_close_req = false;
+                servReqInf.close_req_by = 0;
+                servReqInf.close_req_date = new DateTime(1900, 1, 1);
+                servReqInf.close_req_reason = string.Empty;
+
                 string[] sources = { "ERP", "Portal", "App" };
                 if (!servReqInf.acccode.StartsWith("160") || servReqInf.acccode.Length!=12)
                 {
@@ -163,7 +199,8 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
                 return Ok(ApiResponse<dynamic>.SuccessResponse(savedSerReqInf, message: "Service request info saved successfully"));
             }
 
-            var updatedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Update.ToString());
+            var updatedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Update.ToString(),
+                IsCustomer ? TokUserId : (int?)null);
 
             if (updatedSerReqInf == null)
             {
@@ -185,7 +222,8 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         [HttpGet("get-user-service-request-counter")]
         public async Task<IActionResult> GetUserServiceRequestCounter(string? comcod, string user_role, string unq_id)
         {
-            var response = await _servReqInf.GetUserServiceReqeustCounter(comcod, user_role, unq_id);
+            if (TokUserId == 0 || string.IsNullOrEmpty(TokRole)) return Forbid();
+            var response = await _servReqInf.GetUserServiceReqeustCounter(TokComcod, TokRole, TokUserId.ToString());
 
             if (response == null)
                 return NotFound(ApiResponse<string>.FailureResponse(

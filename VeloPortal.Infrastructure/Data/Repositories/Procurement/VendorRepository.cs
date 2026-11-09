@@ -31,6 +31,58 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<VendorProfile?> FindVendorByEmailAsync(string comcod, string email)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                return await dbContext.VendorProfile.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.comcod == comcod && p.vendor_email == email);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return null;
+            }
+        }
+
+        public async Task<bool> SetEmailVerifiedAsync(string comcod, long vendorProfileId)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                var v = await dbContext.VendorProfile.FirstOrDefaultAsync(p =>
+                    p.comcod == comcod && p.vendor_profile_id == vendorProfileId);
+                if (v == null) return false;
+                v.is_email_verify = true;
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> IsVendorLoginAllowedAsync(string comcod, long vendorProfileId)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                return await dbContext.VendorProfile.AsNoTracking().AnyAsync(p =>
+                    p.comcod == comcod &&
+                    p.vendor_profile_id == vendorProfileId &&
+                    p.is_email_verify == true &&   // vendor verified by e-mail OTP (is_approved has a different purpose)
+                    p.is_hold != true);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false; // fail closed
+            }
+        }
+
         public async Task<IEnumerable<DtoVendorDashboardCounter>?> GetVendorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code)
         {
             try
@@ -198,7 +250,8 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     existingVendor.compan_overview = obj.compan_overview;
                     existingVendor.company_bin = obj.company_bin;
                     existingVendor.contact_no = obj.contact_no;
-                    existingVendor.vendor_email = obj.vendor_email;
+                    // NOTE: vendor_email, status flags (is_verify_acc / is_email_verify / is_approved / is_hold / is_audit)
+                    // and rescode are intentionally NOT updatable here; they are server / back-office controlled.
                     existingVendor.license_no = obj.license_no;
                     existingVendor.num_of_client = obj.num_of_client;
                     existingVendor.ong_num_of_client = obj.ong_num_of_client;
@@ -206,8 +259,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     existingVendor.secondary_contact_no = obj.secondary_contact_no;
                     existingVendor.designation = obj.designation;
                     existingVendor.is_available = obj.is_available;
-                    existingVendor.is_verify_acc = obj.is_verify_acc;
-                    existingVendor.is_email_verify = obj.is_email_verify;
                     existingVendor.experience = obj.experience;
                     existingVendor.terms_condition = obj.terms_condition;
                     existingVendor.business_type = obj.business_type;
@@ -221,11 +272,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     existingVendor.acc_number = obj.acc_number;
                     existingVendor.routeno = obj.routeno;
                     existingVendor.links = obj.links;
-                    existingVendor.rescode = obj.rescode;
-                    existingVendor.is_audit = obj.is_audit;
                     existingVendor.user_photo = obj.user_photo;
-                    existingVendor.is_hold = obj.is_hold;
-                    existingVendor.is_approved = obj.is_approved;
 
                 }
 
