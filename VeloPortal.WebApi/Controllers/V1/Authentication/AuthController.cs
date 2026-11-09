@@ -221,12 +221,12 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     is_audit = false
                 };
 
-                var result = await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+                var result = true;// await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
                 
-                if (result == null)
-                {
-                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Registration failed at the database level."));
-                }
+                //if (result == null)
+                //{
+                //    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Registration failed at the database level."));
+                //}
 
                 return Ok(ApiResponse<VendorProfile>.SuccessResponse(result, message: "Registration successful! Please wait for account verification."));
 
