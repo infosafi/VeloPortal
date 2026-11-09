@@ -221,7 +221,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     is_audit = false
                 };
 
-                var result = true;// await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+                var result = new VendorProfile();// await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
                 
                 //if (result == null)
                 //{
