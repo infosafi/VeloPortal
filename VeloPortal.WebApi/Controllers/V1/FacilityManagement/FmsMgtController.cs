@@ -137,6 +137,22 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
         {
             if (servReqInf.service_req_id == 0)
             {
+                string[] sources = { "ERP", "Portal", "App" };
+                if (!servReqInf.acccode.StartsWith("160") || servReqInf.acccode.Length!=12)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Project Code is Invalid"));
+
+                }
+                if (!servReqInf.unitcode.StartsWith("50"))
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Unit Code is Invalid"));
+
+                }
+                if (!sources.Contains(servReqInf.req_medium))
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Your data is invalid"));
+
+                }
                 var savedSerReqInf = await _servReqInf.InsertOrUpdateServReqInf(servReqInf, HelperEnums.Action.Add.ToString());
 
                 if (savedSerReqInf == null)
