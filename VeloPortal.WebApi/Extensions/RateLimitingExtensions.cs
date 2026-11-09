@@ -11,7 +11,7 @@ namespace VeloPortal.WebApi.Extensions
                 options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
                 {
                     return RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: context.Request.Headers.Host.ToString(),
+                        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                         factory: partition => new FixedWindowRateLimiterOptions
                         {
                             AutoReplenishment = true,
@@ -22,7 +22,17 @@ namespace VeloPortal.WebApi.Extensions
                         });
                 });
 
-                options.OnRejected = async (context, token) =>
+                // Strict per-IP limit for credential / signup / OTP endpoints
+                options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
+                options.OnRejected =async (context, token) =>
                 {
                     context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                     await context.HttpContext.Response.WriteAsync(

@@ -17,7 +17,7 @@ namespace VeloPortal.Infrastructure.Service
         {
             _settings = settings.Value;
         }
-        public string GenerateAccessToken(DtoUserInf? user)
+        public string GenerateAccessToken(DtoUserInf? user, string? userType = null)
         {
             if (user == null)
             {
@@ -31,7 +31,11 @@ namespace VeloPortal.Infrastructure.Service
             new Claim(JwtRegisteredClaimNames.Sub, user.unq_id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.user_email??""),
-            new Claim(JwtRegisteredClaimNames.Name, user.username??"")
+            new Claim(JwtRegisteredClaimNames.Name, user.username??""),
+            // server-issued identity used for authorization (never trust client-sent values)
+            new Claim("comcod", user.comcod ?? ""),
+            new Claim("user_type", (userType ?? "").Trim().ToLowerInvariant()),
+            new Claim("user_role", user.user_role ?? "")
         };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret ?? ""));
@@ -48,6 +52,34 @@ namespace VeloPortal.Infrastructure.Service
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
 
+        }
+
+        public System.Security.Claims.ClaimsPrincipal? ReadExpiredToken(string? accessToken)
+        {
+            if (string.IsNullOrWhiteSpace(accessToken)) return null;
+            try
+            {
+                var parameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = false,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = _settings.Issuer,
+                    ValidAudience = _settings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret ?? ""))
+                };
+                var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+                var principal = handler.ValidateToken(accessToken, parameters, out var validated);
+                if (validated is not JwtSecurityToken jwt ||
+                    !jwt.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.OrdinalIgnoreCase))
+                    return null;
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public string GenerateRefreshToken()

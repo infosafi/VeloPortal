@@ -129,7 +129,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
             }
         }
 
-        public async Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action)
+        public async Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action, int? enforceOwnerId = null)
         {
             try
             {
@@ -170,6 +170,12 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                         p.service_no == obj.service_no);
 
                     if (exist == null)
+                    {
+                        return null;
+                    }
+
+                    // Caller may only modify requests they created
+                    if (enforceOwnerId.HasValue && exist.created_by != enforceOwnerId.Value)
                     {
                         return null;
                     }
@@ -271,7 +277,8 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                         x.service_req_id == obj.service_req_id &&
                         x.service_no == obj.service_no);
 
-                if (existingData == null)
+                // unknown request, or feedback already submitted: do not allow overwriting
+                if (existingData == null || existingData.is_done)
                 {
                     return false;
                 }
