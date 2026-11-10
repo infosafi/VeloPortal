@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -29,10 +30,18 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         private readonly IPassRecovery _passRecovery;
         private readonly IVendorProfile _vendorprofile;
         private readonly ILoginLogs _loginlogs;
+        private readonly ISecureOtp _secureOtp;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly byte[] _otpKey;
 
         public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo, ILoginLogs loginlogs,
-            IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile)
+            IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile, ISecureOtp secureOtp,
+            Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Options.IOptions<JwtSettings> jwtOptions)
         {
+            _secureOtp = secureOtp;
+            _cache = cache;
+            // derived key: OTP HMAC is independent of the JWT signing key itself
+            _otpKey = SHA256.HashData(Encoding.UTF8.GetBytes("otp-hmac:" + (jwtOptions.Value.Secret ?? "")));
             _jwtService = jwtService;
             _refreshRepo = refreshRepo;
             _loginlogs = loginlogs;
@@ -43,6 +52,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
 
         [HttpPost("portal-login")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(DtoPortalAuthUser dto)
         {
             if (dto.comcod?.Length == 0)
@@ -64,14 +74,26 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             if (user == null)
             {
+                await LogLoginAttemptAsync(dto, 0, false, "Invalid credentials", "");
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
             if (user.unq_id == 0)
             {
+                await LogLoginAttemptAsync(dto, 0, false, "Invalid credentials", "");
                 return Unauthorized(new { Success = false, message = "User or Password Invalid", twofactor = false });
             }
 
-            var accessToken = _jwtService.GenerateAccessToken(user);
+            // Vendors self-register: only e-mail verified, non-held vendors may obtain a token.
+            if (string.Equals(dto.user_type?.Trim(), "vendor", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!await _vendorprofile.IsVendorLoginAllowedAsync(dto.comcod ?? "", user.unq_id))
+                {
+                    await LogLoginAttemptAsync(dto, user.unq_id, false, "Vendor email not verified or on hold", "");
+                    return Unauthorized(new { Success = false, message = "Account email is not verified or the account is on hold.", twofactor = false });
+                }
+            }
+
+            var accessToken = _jwtService.GenerateAccessToken(user, dto.user_type);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
             await _refreshRepo.SaveAsync(new RefreshToken
@@ -83,21 +105,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             string sessionid = GenerateSessionId(user.unq_id, dto.comcod ?? "");
 
-            LoginLogs loginLogs = new LoginLogs();
-            loginLogs.userid = user.unq_id;
-            loginLogs.comcod = dto.comcod ?? "";
-            loginLogs.username_or_email = dto.user_or_email ?? "";
-            loginLogs.login_status = true;
-            loginLogs.failure_reason = "";
-            loginLogs.ip_address = dto.ip_address ?? "";
-            loginLogs.user_agent = dto.user_agent ?? "";
-            loginLogs.mac_address = dto.macaddress ?? "";
-            loginLogs.remarks = dto.user_type ?? "";
-            loginLogs.usession_id = sessionid;
-            loginLogs.location = dto.location ?? "";
-            loginLogs.attempt_time = DateTimeExtensions.GetLocalTimeFromBaseOnTimeZone();
-
-            await _loginlogs.InsertOrUpdateLoginLogs(loginLogs, HelperEnums.Action.Add.ToString());
+            await LogLoginAttemptAsync(dto, user.unq_id, true, "", sessionid);
 
             return Ok(new
             {
@@ -109,6 +117,47 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             });
         }
 
+
+        /// <summary>Real client address as seen by the server (the client-sent value can be empty or forged).
+        /// Behind a reverse proxy the right-most X-Forwarded-For entry (added by our own proxy) is used.</summary>
+        private string ServerClientIp()
+        {
+            var xff = Request.Headers["X-Forwarded-For"].ToString();
+            if (!string.IsNullOrWhiteSpace(xff))
+            {
+                var last = xff.Split(',').Select(s => s.Trim()).LastOrDefault(s => s.Length > 0);
+                if (!string.IsNullOrEmpty(last)) return Clip(last, 45);
+            }
+            return Clip(HttpContext.Connection.RemoteIpAddress?.ToString(), 45);
+        }
+
+        /// <summary>Writes a login attempt (success or failure) with server-side IP and User-Agent.</summary>
+        private async Task LogLoginAttemptAsync(DtoPortalAuthUser dto, int userId, bool ok, string reason, string sessionId)
+        {
+            try
+            {
+                var logs = new LoginLogs
+                {
+                    userid = userId,
+                    comcod = Clip(dto.comcod, 5),
+                    username_or_email = Clip(dto.user_or_email, 100),
+                    login_status = ok,
+                    failure_reason = Clip(reason, 100),
+                    ip_address = ServerClientIp(),
+                    user_agent = Clip(Request.Headers.UserAgent.ToString(), 250),
+                    mac_address = dto.macaddress ?? "",
+                    remarks = dto.user_type ?? "",
+                    usession_id = sessionId,
+                    location = dto.location ?? "",
+                    attempt_time = DateTimeExtensions.GetLocalTimeFromBaseOnTimeZone()
+                };
+                await _loginlogs.InsertOrUpdateLoginLogs(logs, HelperEnums.Action.Add.ToString());
+            }
+            catch
+            {
+                // logging must never break the login flow
+            }
+        }
 
         public static string GenerateSessionId(int userId, string comcod)
         {
@@ -130,6 +179,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
 
         [HttpPost("refresh")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         public async Task<IActionResult> Refresh(DtoJwtToken dto)
         {
             var storedToken = await _refreshRepo.GetByTokenAsync(dto.RefreshToken);
@@ -137,8 +187,22 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             if (storedToken == null || storedToken.is_revoked || storedToken.expires < DateTime.UtcNow)
                 return Unauthorized();
 
-            var user = await _userRepo.GetUserInfoByIdRole(dto.comcod ?? "", dto.user_type ?? "", Convert.ToString(storedToken.user_id), dto.user_role ?? "");
-            var newAccessToken = _jwtService.GenerateAccessToken(user);
+            // Identity (company / user type / role) must come from the originally issued token,
+            // not from client-supplied fields, otherwise a refresh token can be replayed as another user type.
+            var oldPrincipal = _jwtService.ReadExpiredToken(dto.AccessToken);
+            if (oldPrincipal == null ||
+                oldPrincipal.FindFirst("sub")?.Value != storedToken.user_id.ToString())
+                return Unauthorized();
+
+            var tokComcod = oldPrincipal.FindFirst("comcod")?.Value ?? "";
+            var tokUserType = oldPrincipal.FindFirst("user_type")?.Value ?? "";
+            var tokRole = oldPrincipal.FindFirst("user_role")?.Value ?? "";
+
+            var user = await _userRepo.GetUserInfoByIdRole(tokComcod, tokUserType, Convert.ToString(storedToken.user_id), tokRole);
+            if (user != null && tokUserType == "vendor" &&
+                !await _vendorprofile.IsVendorLoginAllowedAsync(tokComcod, user.unq_id))
+                return Unauthorized();
+            var newAccessToken = _jwtService.GenerateAccessToken(user, tokUserType);
             var newRefreshToken = _jwtService.GenerateRefreshToken();
 
             storedToken.is_revoked = true;
@@ -181,6 +245,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         /// Registers a new vendor into the portal.
         /// </summary>
         [HttpPost("portal-signup")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         public async Task<IActionResult> Signup(DtoPortalSignup dto)
         {
             // 1. Basic Validation
@@ -197,9 +262,27 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             if (string.IsNullOrWhiteSpace(dto.company_name))
                 return BadRequest(new { Success = false, message = "Company Name is required!" });
 
+            // Input hardening: format/length checks and no markup (stored-XSS / junk accounts)
+            dto.email = dto.email.Trim();
+            dto.company_name = dto.company_name.Trim();
+            dto.phone = (dto.phone ?? "").Trim();
+            if (dto.email.Length > 100 || !System.Text.RegularExpressions.Regex.IsMatch(dto.email, @"^[^@\s<>""']+@[^@\s<>""']+\.[^@\s<>""']+$"))
+                return BadRequest(new { Success = false, message = "A valid email address is required." });
+            if (dto.password.Length > 100)
+                return BadRequest(new { Success = false, message = "Password is too long." });
+            if (dto.company_name.Length > 200 || dto.company_name.IndexOfAny(new[] { '<', '>' }) >= 0)
+                return BadRequest(new { Success = false, message = "Company name is invalid." });
+            if (dto.phone.Length > 20 || !System.Text.RegularExpressions.Regex.IsMatch(dto.phone, @"^[0-9+\-\s()]*$"))
+                return BadRequest(new { Success = false, message = "Phone number is invalid." });
+            if (dto.comcod.Length > 10 || !dto.comcod.All(char.IsDigit))
+                return BadRequest(new { Success = false, message = "Company Code is invalid." });
+
+            // Public signup can only ever create a vendor, regardless of what the client sends.
+            dto.user_type = "vendor";
+
             try
             {
-          
+
                 var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
                 if (existingUser != null && existingUser.unq_id != 0)
                 {
@@ -222,20 +305,81 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 };
 
                 var result = await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
-                
+
                 if (result == null)
                 {
-                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Registration failed at the database level."));
+                    return BadRequest(new { Success = false, message = "Registration failed." });
                 }
 
-                return Ok(ApiResponse<VendorProfile>.SuccessResponse(result, message: "Registration successful! Please wait for account verification."));
+                // Verify the e-mail address: send a one-time code. The vendor stays unverified until it is confirmed.
+                await SendVendorSignupOtpAsync(dto.comcod, (int)result.vendor_profile_id, dto.email, dto.company_name);
+
+                // Never echo the stored profile (it contains the password hash) back to the caller.
+                return Ok(new { Success = true, email_verification_required = true,
+                    message = "Registration successful! A verification code was sent to your email. After verifying, please wait for account approval." });
 
             }
             catch (Exception ex)
             {
+                ErrorTrackingExtension.SetError(ex);
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { Success = false, message = "An error occurred during signup.", detail = ex.Message });
+                    new { Success = false, message = "An error occurred during signup." });
             }
+        }
+
+        private async Task<bool> SendVendorSignupOtpAsync(string comcod, int vendorProfileId, string email, string? companyName)
+        {
+            var code = await _secureOtp.IssueVendorSignupOtpAsync(comcod, vendorProfileId, HttpContext.Connection.RemoteIpAddress?.ToString());
+            if (code == null) return false;
+
+            var name = System.Net.WebUtility.HtmlEncode(companyName ?? "");
+            var body = $@"<div style=""font-family:Arial,sans-serif;max-width:480px;margin:auto"">
+<h2>VeloPortal email verification</h2>
+<p>Hello <strong>{name}</strong>, use this code to verify your email. It is valid for 10 minutes.</p>
+<p style=""font-size:36px;letter-spacing:8px;font-weight:bold"">{code}</p>
+<p style=""color:#777"">If you did not sign up, ignore this email.</p></div>";
+            await EmailHelper.SendEmail(email, "Verify your VeloPortal email", body);
+            return true;
+        }
+
+        /// <summary>Confirms the vendor's email with the code that was e-mailed at signup.</summary>
+        [HttpPost("verify-signup-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifySignupOtp([FromBody] DtoVerifySignupOtp dto)
+        {
+            // One identical answer for every failure (unknown e-mail, already verified, wrong/expired code, too many
+            // attempts) so the endpoint cannot be used to find out which e-mail addresses have a vendor account.
+            var generic = BadRequest(new { Success = false, message = "Invalid or expired verification code. If needed, request a new code." });
+            if (string.IsNullOrWhiteSpace(dto.comcod) || string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.otp))
+                return generic;
+
+            var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+            if (vendor == null || vendor.is_email_verify == true) return generic;
+
+            var res = await _secureOtp.VerifyVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, dto.otp);
+            if (res != OtpVerifyResult.Ok) return generic;
+
+            if (!await _vendorprofile.SetEmailVerifiedAsync(vendor.comcod, vendor.vendor_profile_id))
+                return StatusCode(500, new { Success = false, message = "Could not complete verification. Please try again." });
+
+            return Ok(new { Success = true, message = "Email verified. You can now log in." });
+        }
+
+        /// <summary>Sends a new signup verification code (60s cooldown). Always answers the same way.</summary>
+        [HttpPost("resend-signup-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendSignupOtp([FromBody] DtoResendSignupOtp dto)
+        {
+            if (!string.IsNullOrWhiteSpace(dto.comcod) && !string.IsNullOrWhiteSpace(dto.email))
+            {
+                var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+                if (vendor != null && vendor.is_email_verify != true && !string.IsNullOrEmpty(vendor.vendor_email))
+                    await SendVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, vendor.vendor_email, vendor.company_name);
+            }
+            // Same reply whether or not the account exists (no user enumeration)
+            return Ok(new { Success = true, message = "If the account exists and is not verified, a new code has been sent." });
         }
 
         /// <summary>
@@ -277,385 +421,186 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
 
+        // ---------------- Password recovery (OTP) ----------------
+        // The OTP is bound to the user (id + e-mail), stored only as an HMAC, single use, expires,
+        // and limited to a few wrong guesses. Public answers never reveal whether an account exists.
+        private const int RecoveryMaxAttempts = 5;
+        private const int RecoveryCooldownSeconds = 60;
+        private const string RecoveryGenericError = "Invalid or expired code.";
+
+        private string RecoveryHash(int userId, string email, string code)
+        {
+            using var h = new HMACSHA256(_otpKey);
+            return Convert.ToBase64String(h.ComputeHash(
+                Encoding.UTF8.GetBytes($"recovery|{userId}|{email.Trim().ToLowerInvariant()}|{code}")));
+        }
+
+        private static string Clip(string? s, int max) => string.IsNullOrEmpty(s) ? "" : (s.Length > max ? s.Substring(0, max) : s);
+
+        private async Task IssueRecoveryOtpAsync(string? comcod, string? userType, string? userOrEmail, string? userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(comcod) || string.IsNullOrWhiteSpace(userOrEmail) || userOrEmail.Length > 100)
+                return;
+
+            var user = await _userRepo.FindUserByEmailOrPhoneAsync(comcod, userType ?? "", userOrEmail);
+            if (user == null || user.unq_id == 0 || string.IsNullOrWhiteSpace(user.user_email))
+                return;
+
+            var now = DateTime.UtcNow;
+            var last = await _passRecovery.GetLatestForUserAsync(user.unq_id, user.user_email);
+            if (last != null && !last.is_expired)
+            {
+                if (last.created_date > now.AddSeconds(-RecoveryCooldownSeconds))
+                    return; // resend cooldown
+
+                last.is_expired = true; // a new code supersedes the old one
+                await _passRecovery.InsertOrUpdatePassRecovery(last, HelperEnums.Action.Update.ToString());
+            }
+
+            var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+            var saved = await _passRecovery.InsertOrUpdatePassRecovery(new PassRecovery
+            {
+                user_id = user.unq_id,
+                user_email = user.user_email,
+                recovery_otp = RecoveryHash(user.unq_id, user.user_email, otp),
+                created_date = now,
+                expiry_date = now.AddMinutes(5),
+                execution_date = new DateTime(1900, 1, 1),
+                request_agent = Clip(userAgent, 250),
+                ip_address = Clip(HttpContext.Connection.RemoteIpAddress?.ToString(), 50),
+                is_recovered = false,
+                is_expired = false,
+                portal_role = !string.IsNullOrEmpty(user.user_role) ? Clip(user.user_role, 7) : "51"
+            }, HelperEnums.Action.Add.ToString());
+            if (!saved) return;
+
+            var name = System.Net.WebUtility.HtmlEncode(user.fullname ?? "");
+            var message = $@"<div style=""font-family:Arial,sans-serif;max-width:480px;margin:auto"">
+<h2>VeloPortal password reset</h2>
+<p>Hello <strong>{name}</strong>, use this code to reset your password. It is valid for 5 minutes.</p>
+<p style=""font-size:36px;letter-spacing:8px;font-weight:bold"">{otp}</p>
+<p style=""color:#777"">If you did not request this, you can safely ignore this email. No changes will be made to your account.</p></div>";
+            await EmailHelper.SendEmail(user.user_email, "Your VeloPortal Verification Code", message);
+        }
+
+        /// <summary>Checks user + code. alreadyVerified=false for verify-otp, true for reset-password.</summary>
+        private async Task<(DtoUserInf? user, PassRecovery? rec, string? error)> ValidateRecoveryAsync(
+            string? comcod, string? userType, string? userOrEmail, string? otp, bool alreadyVerified)
+        {
+            if (string.IsNullOrWhiteSpace(comcod) || string.IsNullOrWhiteSpace(userOrEmail) || userOrEmail.Length > 100 ||
+                string.IsNullOrWhiteSpace(otp) || otp.Trim().Length != 6 || !otp.Trim().All(char.IsDigit))
+                return (null, null, RecoveryGenericError);
+
+            var user = await _userRepo.FindUserByEmailOrPhoneAsync(comcod, userType ?? "", userOrEmail);
+            if (user == null || user.unq_id == 0 || string.IsNullOrWhiteSpace(user.user_email))
+                return (null, null, RecoveryGenericError);
+
+            var rec = await _passRecovery.GetLatestForUserAsync(user.unq_id, user.user_email);
+            if (rec == null || rec.is_expired || rec.expiry_date < DateTime.UtcNow || rec.is_recovered != alreadyVerified)
+                return (null, null, RecoveryGenericError);
+
+            var cacheKey = "pr-attempts:" + rec.recover_id;
+            var attempts = _cache.TryGetValue(cacheKey, out int a) ? a : 0;
+            if (attempts >= RecoveryMaxAttempts)
+            {
+                rec.is_expired = true; // burn it; a new code must be requested
+                await _passRecovery.InsertOrUpdatePassRecovery(rec, HelperEnums.Action.Update.ToString());
+                return (null, null, "Too many wrong attempts. Please request a new code.");
+            }
+
+            var expected = Encoding.UTF8.GetBytes(rec.recovery_otp ?? "");
+            var given = Encoding.UTF8.GetBytes(RecoveryHash(user.unq_id, user.user_email, otp.Trim()));
+            if (!CryptographicOperations.FixedTimeEquals(expected, given))
+            {
+                _cache.Set(cacheKey, attempts + 1, TimeSpan.FromMinutes(15));
+                return (null, null, RecoveryGenericError);
+            }
+            return (user, rec, null);
+        }
+
         /// <summary>
         /// Sends a 6-digit OTP to the user's email for password recovery.
+        /// Always answers the same way, whether or not the account exists.
         /// </summary>
-        /// <param name="dto">Contains the user's email or phone and the user-agent string.</param>
-        /// <returns>
-        /// Returns 200 OK if OTP is sent successfully, 
-        /// 400 BadRequest for invalid input or inactive user, 
-        /// 404 NotFound if the user does not exist or OTP fails to store.
-        /// </returns>
-        /// <remarks>
-        /// The generated OTP is valid for 5 minutes. The request logs IP address and user-agent info for audit purposes. 
-        /// If the user does not exist or is inactive, no email is sent.
-        /// </remarks>
         [HttpPost("forgot-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] DtoUserForgotPassword dto)
         {
             if (string.IsNullOrWhiteSpace(dto.user_or_email))
                 return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Phone or Email is required."));
+                    new List<string> { "Phone or Email is required." }, "Phone or Email is required."));
 
-            var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email);
-            if (user == null || user.unq_id == 0)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "User not found." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
-
-            // Generate 6-digit OTP and expiry
-            var otp = new Random().Next(100000, 999999).ToString();
-            var createdDate = DateTime.UtcNow;
-            var expiryDate = createdDate.AddMinutes(5);
-
-            // Get client IP and user-agent
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-
-            // Build PassRecovery entity
-            var passRecovery = new PassRecovery
-            {
-                user_id = user.unq_id,
-                user_email = user.user_email,
-                recovery_otp = otp,
-                created_date = createdDate,
-                expiry_date = expiryDate,
-                execution_date = DateTime.Parse("1900-01-01"),
-                request_agent = dto.user_agent,
-                ip_address = ipAddress,
-                is_recovered = false,
-                is_expired = false,
-                portal_role = !string.IsNullOrEmpty(user.user_role) ? user.user_role : "51"
-            };
-
-            // Save to DB
-            var result = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
-            if (!result)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "Failed to store OTP." }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
-
-            // Compose and send OTP email
-            var subject = "Your VeloPortal Verification Code";
-
-            var message = $@"
-                    <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
-                        <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
-                            <tr>
-                                <td class=""bg-warning"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
-                                    <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
-                                </td>
-                            </tr>
-        
-                            <tr>
-                                <td style=""padding: 40px 30px;"">
-                                    <h2 style=""margin: 0 0 20px 0; font-size: 20px; color: #313a46;"">Forgot your password?</h2>
-                                    <p style=""margin: 0 0 25px 0; font-size: 16px; color: #6c757d; line-height: 1.6;"">
-                                        Hello <strong>{user.fullname}</strong>,<br><br>
-                                        We received a request to reset your password. Use the verification code below to proceed. <strong>This code is valid for 5 minutes.</strong>
-                                    </p>
-
-                                    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
-                                        <tr>
-                                            <td align=""center"" style=""background-color: #f1f3fa; border: 1px dashed #727cf5; border-radius: 8px; padding: 25px;"">
-                                                <span style=""font-size: 12px; color: #727cf5; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; display: block; margin-bottom: 10px;"">
-                                                    Your Verification Code
-                                                </span>
-                                                <div style=""font-size: 42px; font-weight: 800; color: #313a46; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;"">
-                                                    {otp}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </table>
-
-                                    <p style=""margin: 25px 0 0 0; font-size: 14px; color: #98a6ad; text-align: center;"">
-                                        If you did not request this, you can safely ignore this email. No changes will be made to your account.
-                                    </p>
-                
-                                    <hr style=""border: 0; border-top: 1px solid #eef2f7; margin: 30px 0;"">
-
-                                    <p style=""font-size: 14px; color: #313a46; margin: 0;"">
-                                        Best regards,<br>
-                                        <strong>VeloPortal Support Team</strong>
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td style=""padding: 20px; background-color: #f9f9f9; text-align: center; border-top: 1px solid #eef2f7;"">
-                                    <p style=""font-size: 12px; color: #98a6ad; margin: 0;"">
-                                        &copy; {DateTime.Now.Year} VeloPortal. All rights reserved. <br>
-                                        This is an automated security message. Please do not reply.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>";
-
-            await EmailHelper.SendEmail(user.user_email, subject, message);
-
-            return Ok(ApiResponse<bool>.SuccessResponse(true, message: "OTP sent to registered email address."));
+            await IssueRecoveryOtpAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.user_agent);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, message: "If the account exists, an OTP has been sent to the registered email address."));
         }
 
-        /// <summary>
-        /// Verifies the 6-digit OTP.
-        /// </summary>
-        /// <param name="dto">Contains the OTP entered by the user.</param>
-        /// <returns>
-        /// 200 OK if OTP is sent successfully.  
-        /// 400 Bad Request for invalid input or inactive user.  
-        /// 404 Not Found if the user does not exist or OTP storage fails.
-        /// </returns>
-        /// <remarks>
-        /// Generates a one-time 6-digit OTP valid for 5 minutes.   
-        /// No email is sent if the user is inactive or not found.
-        /// </remarks>
+        /// <summary>Verifies the 6-digit OTP (bound to the user). Required before reset-password.</summary>
         [HttpPost("verify-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        [AllowAnonymous]
         public async Task<IActionResult> VerifyOtp([FromBody] DtoVerifyOtp dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.otp))
-                return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "OTP is required." }, "Invalid input."));
+            var (user, rec, error) = await ValidateRecoveryAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.otp, alreadyVerified: false);
+            if (rec == null)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { error ?? RecoveryGenericError }, "Invalid OTP."));
 
-            //  Fetch latest OTP record
-            var otpRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
-            if (otpRecord == null)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "Invalid or expired OTP." }, "OTP not found."));
+            rec.is_recovered = true;
+            rec.execution_date = DateTime.UtcNow;
+            rec.expiry_date = DateTime.UtcNow.AddMinutes(5); // window to set the new password
+            await _passRecovery.InsertOrUpdatePassRecovery(rec, HelperEnums.Action.Update.ToString());
 
-            //  Check OTP state
-            if (otpRecord.is_recovered)
-                return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "OTP already used." }, "Invalid OTP."));
-
-            if (otpRecord.is_expired || DateTime.UtcNow > otpRecord.expiry_date)
-            {
-                otpRecord.is_expired = true;
-                await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
-                return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "OTP expired." }, "Expired OTP."));
-            }
-
-            //  Compare OTP safely
-            if (!string.Equals(otpRecord.recovery_otp?.Trim(), dto.otp.Trim(), StringComparison.Ordinal))
-                return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "Invalid OTP." }, "Incorrect OTP."));
-
-            //  Mark OTP as verified and issue reset token
-            otpRecord.is_recovered = true;
-            otpRecord.execution_date = DateTime.UtcNow;
-            otpRecord.expiry_date = DateTime.UtcNow.AddMinutes(5);
-
-            await _passRecovery.InsertOrUpdatePassRecovery(otpRecord, HelperEnums.Action.Update.ToString());
-
-            return Ok(ApiResponse<PassRecovery>.SuccessResponse(otpRecord, "OTP verified successfully. Use this token to reset your password."));
-
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "OTP verified successfully. You can now reset your password."));
         }
 
-        /// <summary>
-        /// Resets the user's password using a verified otp.
-        /// </summary>
-        /// <param name="dto">
-        /// Contains the verified OTP and new password credentials.
-        /// </param>
-        /// <returns>
-        /// 200 OK if the password is reset successfully.  
-        /// 400 Bad Request if input is invalid or the otp is expired.  
-        /// 404 Not Found if the associated user cannot be found.
-        /// </returns>
-        /// <remarks>
-        /// Final step of the password recovery process.  
-        /// Requires a valid otp from <c>verify-otp</c>.  
-        /// Token expires in 5 minutes and is invalidated after use.  
-        /// Passwords are securely encrypted before storage.
-        /// </remarks>
+        /// <summary>Resets the password. Needs a code that was verified for this same user via verify-otp.</summary>
         [HttpPost("reset-password")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        [AllowAnonymous]
         public async Task<IActionResult> ResetPassword([FromBody] DtoResetPassword dto)
         {
-            //  Input validation
-            if (string.IsNullOrWhiteSpace(dto.new_password) ||
-                string.IsNullOrWhiteSpace(dto.confirm_password))
-            {
+            if (string.IsNullOrWhiteSpace(dto.new_password) || string.IsNullOrWhiteSpace(dto.confirm_password))
                 return BadRequest(ApiResponse<string>.FailureResponse(
                     new List<string> { "All fields are required." }, "Invalid input."));
-            }
-
             if (dto.new_password != dto.confirm_password)
                 return BadRequest(ApiResponse<string>.FailureResponse(
                     new List<string> { "Passwords do not match." }, "Validation error."));
-
-            //  Fetch recovery record
-            var recoveryRecord = await _passRecovery.GetLatestOtpAsync(dto.otp);
-            if (recoveryRecord == null)
+            if (dto.new_password.Length < 6 || dto.new_password.Length > 100)
                 return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "Invalid or expired token." }, "Invalid token."));
+                    new List<string> { "Password must be 6 to 100 characters." }, "Validation error."));
 
-            // Validate token expiry
-            if (recoveryRecord?.expiry_date == null || recoveryRecord.expiry_date < DateTime.UtcNow)
-                return BadRequest(ApiResponse<string>.FailureResponse(
-                    new List<string> { "Reset token expired." }, "Expired token."));
+            var (user, rec, error) = await ValidateRecoveryAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.otp, alreadyVerified: true);
+            if (user == null || rec == null)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { error ?? RecoveryGenericError }, "Invalid token."));
 
-            //  Fetch user linked to the OTP record
-            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync("11001", "Customer", recoveryRecord.user_email);
-            if (existingUser == null)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "User not found." }, "Invalid user."));
+            var role = user.user_role ?? "";
+            string userPrefix = role.StartsWith("99") ? "99" : role.StartsWith("15") ? "15" : "51";
 
             string encryptedPassword = EncryptionExtension.PasswordEnc(dto.new_password);
-
-            string userRole = existingUser.user_role ?? "";
-            string userPrefix = userRole.StartsWith("15") ? "15" : "51";
-
-            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync( "11001", "Customer", existingUser.unq_id.ToString(), encryptedPassword, userPrefix );
-
+            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync(dto.comcod!, dto.user_type ?? "", user.unq_id.ToString(), encryptedPassword, userPrefix);
             if (!isUpdateSuccess)
-            {
                 return BadRequest(ApiResponse<string>.FailureResponse(
-                   new List<string> { "Failed to update password in database." }, "Database Error."));
-            }
+                    new List<string> { "Failed to update password in database." }, "Database Error."));
 
-            recoveryRecord.is_expired = true;
-            recoveryRecord.expiry_date = DateTime.UtcNow;
-            await _passRecovery.InsertOrUpdatePassRecovery(recoveryRecord, HelperEnums.Action.Update.ToString());
+            rec.is_expired = true; // single use
+            rec.expiry_date = DateTime.UtcNow;
+            await _passRecovery.InsertOrUpdatePassRecovery(rec, HelperEnums.Action.Update.ToString());
 
             return Ok(ApiResponse<bool>.SuccessResponse(true, "Password has been reset successfully."));
         }
 
-        /// <summary>
-        /// Resends a new One-Time Password (OTP) to the user's registered email.
-        /// </summary>
-        /// <param name="dto">
-        /// Contains the user's email or username to resend the OTP.
-        /// </param>
-        /// <returns>
-        /// 200 OK if the OTP was successfully resent.  
-        /// 400 Bad Request for invalid input or inactive user.  
-        /// 404 Not Found if the user does not exist.
-        /// </returns>
-        /// <remarks>
-        /// This endpoint regenerates a new 6-digit OTP and sends it to the user's registered email.  
-        /// It replaces any previous OTP and is valid for a limited time (e.g., 5 minutes).  
-        /// Can be used before calling the <c>verify-otp</c> endpoint.
-        /// </remarks>
+        /// <summary>Sends a new OTP (60s cooldown). Always answers the same way.</summary>
         [HttpPost("resend-otp")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         [AllowAnonymous]
         public async Task<IActionResult> ResendOtp([FromBody] DtoResendOtp dto)
         {
-            //  Validate input
             if (string.IsNullOrWhiteSpace(dto.user_or_email))
                 return BadRequest(ApiResponse<string>.FailureResponse(
                     new List<string> { "Email is required." }, "Invalid input."));
 
-            try
-            {
-                //  Find user by email
-                var user = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.user_or_email);
-                if (user == null)
-                    return NotFound(ApiResponse<string>.FailureResponse(
-                        new List<string> { "User not found." }, "Invalid email."));
-
-                //  Generate new OTP
-                var otp = new Random().Next(100000, 999999).ToString();
-                var createdDate = DateTime.UtcNow;
-                var expiryDate = createdDate.AddMinutes(5);
-
-
-                // Get client IP and user-agent
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-
-                // Build PassRecovery entity
-                var passRecovery = new PassRecovery
-                {
-                    user_id = user.unq_id,
-                    user_email = user.user_email,
-                    recovery_otp = otp,
-                    created_date = createdDate,
-                    expiry_date = expiryDate,
-                    execution_date = DateTime.Parse("1900-01-01"),
-                    request_agent = dto.user_agent,
-                    ip_address = ipAddress,
-                    is_recovered = false,
-                    is_expired = false,
-                    portal_role = !string.IsNullOrEmpty(user.user_role) ? user.user_role : "51"
-                };
-
-
-                var saveResponse = await _passRecovery.InsertOrUpdatePassRecovery(passRecovery, HelperEnums.Action.Add.ToString());
-                if (!saveResponse)
-                {
-                    return BadRequest(ApiResponse<string>.FailureResponse(
-                        new List<string> { "Failed to store OTP information." }, "Database operation failed."));
-                }
-
-                //  Prepare email message
-                var subject = "Password Reset Request";
-                var message = $@"
-                    <div style=""background-color: #f6f9fc; padding: 40px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
-                        <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"">
-                            <tr>
-                                <td class=""bg-warning"" style=""background-color: #727cf5; padding: 25px; text-align: center;"">
-                                    <h1 style=""margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;"">VeloPortal</h1>
-                                </td>
-                            </tr>
-        
-                            <tr>
-                                <td style=""padding: 40px 30px;"">
-                                    <h2 style=""margin: 0 0 20px 0; font-size: 20px; color: #313a46;"">Verify your identity</h2>
-                                    <p style=""margin: 0 0 25px 0; font-size: 16px; color: #6c757d; line-height: 1.6;"">
-                                        Hello <strong>{user.fullname}</strong>,<br><br>
-                                        We received a request to reset your password. Use the verification code below to proceed. <strong>This code is valid for 5 minutes.</strong>
-                                    </p>
-
-                                    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
-                                        <tr>
-                                            <td align=""center"" style=""background-color: #f1f3fa; border: 1px dashed #727cf5; border-radius: 8px; padding: 25px;"">
-                                                <span style=""font-size: 12px; color: #727cf5; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; display: block; margin-bottom: 10px;"">
-                                                    Your Verification Code
-                                                </span>
-                                                <div style=""font-size: 42px; font-weight: 800; color: #313a46; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;"">
-                                                    {otp}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </table>
-
-                                    <p style=""margin: 25px 0 0 0; font-size: 14px; color: #98a6ad; text-align: center;"">
-                                        If you did not request this, you can safely ignore this email. No changes will be made to your account.
-                                    </p>
-                
-                                    <hr style=""border: 0; border-top: 1px solid #eef2f7; margin: 30px 0;"">
-
-                                    <p style=""font-size: 14px; color: #313a46; margin: 0;"">
-                                        Best regards,<br>
-                                        <strong>VeloPortal Support Team</strong>
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td style=""padding: 20px; background-color: #f9f9f9; text-align: center; border-top: 1px solid #eef2f7;"">
-                                    <p style=""font-size: 12px; color: #98a6ad; margin: 0;"">
-                                        &copy; {DateTime.Now.Year} VeloPortal. All rights reserved. <br>
-                                        This is an automated security message. Please do not reply.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>";
-
-                //  Send email
-                await EmailHelper.SendEmail(user.user_email, subject, message);
-
-
-                return Ok(ApiResponse<string>.SuccessResponse("A new OTP has been sent to your registered email.", "OTP resent successfully."));
-            }
-            catch (Exception ex)
-            {
-
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    ApiResponse<string>.FailureResponse(
-                        new List<string> { "An unexpected error occurred while resending OTP." },
-                        ErrorTrackingExtension.ErrorMsg ?? ex.Message));
-            }
+            await IssueRecoveryOtpAsync(dto.comcod, dto.user_type, dto.user_or_email, dto.user_agent);
+            return Ok(ApiResponse<string>.SuccessResponse("If the account exists, a new OTP has been sent.", "OTP resent successfully."));
         }
 
 
@@ -668,51 +613,42 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [Authorize]
         public async Task<IActionResult> UserChangePassword(DtoUserChangePassword dto)
         {
-            if (dto.comcod?.Length == 0)
+            // Who is changing the password comes from the token ONLY (never from the request body),
+            // otherwise any logged-in user could set any other user's password.
+            var tokUserId = User.FindFirst("sub")?.Value ?? "";
+            var tokComcod = User.FindFirst("comcod")?.Value ?? "";
+            var tokType = User.FindFirst("user_type")?.Value ?? "";
+            var tokRole = User.FindFirst("user_role")?.Value ?? "";
+            var tokEmail = User.FindFirst("email")?.Value ?? "";
+            var tokName = User.FindFirst("name")?.Value ?? "";
+            if (tokUserId == "" || tokComcod == "" || tokType == "")
+                return Unauthorized(new { Success = false, message = "Please log in again." });
+
+            if (string.IsNullOrEmpty(dto.old_password) || string.IsNullOrEmpty(dto.new_password))
+                return BadRequest(new { Success = false, message = "Old and new password are mandatory!" });
+            if (dto.new_password.Length < 6 || dto.new_password.Length > 100)
+                return BadRequest(new { Success = false, message = "Password must be 6 to 100 characters." });
+
+            // user type exactly as the user store expects it (e.g. Vendor / Customer)
+            var userType = char.ToUpperInvariant(tokType[0]) + tokType.Substring(1);
+
+            // The old password must be correct for THIS token's user.
+            var oldEnc = EncryptionExtension.PasswordEnc(dto.old_password);
+            DtoUserInf? verified = null;
+            foreach (var login in new[] { tokEmail, tokName })
             {
-
-                return BadRequest(new { Success = false, message = "Company Selection is missing!" });
-
+                if (string.IsNullOrWhiteSpace(login)) continue;
+                verified = await _userRepo.ValidateCredentialsAsync(tokComcod, userType, login, oldEnc);
+                if (verified != null && verified.unq_id.ToString() == tokUserId) break;
+                verified = null;
             }
-            if (dto.new_password?.Length == 0)
-            {
-                return BadRequest(new { Success = false, message = "New Password Mandatory!" });
+            if (verified == null)
+                return BadRequest(new { Success = false, message = "Old password is incorrect." });
 
-            }
-
-            string userType;
-            string userPrefix;
-
-            if (dto.user_role.StartsWith("99"))
-            {
-                userType = "Vendor";
-                userPrefix = "99";
-            }
-            else if (dto.user_role.StartsWith("15"))
-            {
-                userType = "Customer";
-                userPrefix = "15";
-            }
-            else if (dto.user_role.StartsWith("51"))
-            {
-                userType = "Customer";
-                userPrefix = "51";
-            }
-            else
-            {
-                return BadRequest(new { Success = false, message = "Invalid user role!" });
-            }
-
-            var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, userType, dto.user_email);
-
-            if (existingUser == null)
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "User not found." }, "Invalid user."));
-
+            string userPrefix = tokRole.StartsWith("99") ? "99" : tokRole.StartsWith("15") ? "15" : "51";
             string encryptedPassword = EncryptionExtension.PasswordEnc(dto.new_password);
 
-            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync(dto.comcod,userType,existingUser.unq_id.ToString(),encryptedPassword, userPrefix );
-
+            bool isUpdateSuccess = await _userRepo.UpdatePasswordAsync(tokComcod, userType, tokUserId, encryptedPassword, userPrefix);
             if (!isUpdateSuccess)
             {
                 return BadRequest(ApiResponse<string>.FailureResponse(

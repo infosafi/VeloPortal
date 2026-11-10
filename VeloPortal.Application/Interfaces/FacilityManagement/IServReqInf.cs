@@ -10,7 +10,7 @@ namespace VeloPortal.Application.Interfaces.FacilityManagement
         Task<DtoServiceRequestDetails?> GetSingleServiceRequestDetailsInformation(string? comcod, long? service_req_id);
         Task<IEnumerable<DtoPortalUsersServiceRequest>?> GetPortalUsersServiceRequests(string? comcod, string user_role, string unq_id);
         Task<IEnumerable<DtoServiceRequest>?> GetUserConcernProjects(string? comcod, string user_role, string unq_id);
-        Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action);
+        Task<ServReqInf?> InsertOrUpdateServReqInf(ServReqInf obj, string? action, int? enforceOwnerId = null);
         Task<IEnumerable<DtoUserServiceRequestCounter>?> GetUserServiceReqeustCounter(string? comcod, string user_role, string unq_id);
 
     }

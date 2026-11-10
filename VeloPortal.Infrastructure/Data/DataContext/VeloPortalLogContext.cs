@@ -15,6 +15,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #region Authentication
         public DbSet<RefreshToken> RefreshToken { get; set; }
         public DbSet<LoginLogs> LoginLogs { get; set; }
+        public DbSet<SecureLoginInf> SecureLoginInf { get; set; }
         #endregion
 
     }

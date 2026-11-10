@@ -117,6 +117,8 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPortalAuthUser, PortalAuthUserRepository>();
             services.AddScoped<IPassRecovery, PassRecoveryRepository>();
             services.AddScoped<ILoginLogs, LoginLogsRepository>();
+            services.AddMemoryCache();
+            services.AddScoped<ISecureOtp, SecureOtpRepository>();
             #endregion
 
             #region start AcccountsFinance Service add

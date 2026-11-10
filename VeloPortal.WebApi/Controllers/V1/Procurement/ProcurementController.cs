@@ -52,29 +52,68 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement
         /// Updates the vendor profile details.
         /// </summary>
         [HttpPost("update-vendor-profile")]
-
-        public async Task<IActionResult> UpdateVendorProfile(VendorProfile dto)
+        public async Task<IActionResult> UpdateVendorProfile([FromBody] DtoVendorProfileUpdate dto)
         {
-            if (dto.vendor_profile_id == 0)
+            // Only a vendor may edit a vendor profile, and only their OWN one: the profile id and company
+            // come from the token, never from the request. This endpoint can no longer create vendors
+            // (signup does that) and can no longer touch verification / approval / hold / rescode / e-mail.
+            if (User.FindFirst("user_type")?.Value != "vendor")
+                return Forbid();
+
+            var comcod = User.FindFirst("comcod")?.Value ?? "";
+            if (!long.TryParse(User.FindFirst("sub")?.Value, out var vendorId) || vendorId <= 0 || comcod == "")
+                return Unauthorized();
+
+            if (dto == null)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "Payload is required." }, "Invalid input."));
+
+            // free-text length caps
+            if ((dto.company_name?.Length ?? 0) > 200 || (dto.contact_no?.Length ?? 0) > 20 ||
+                (dto.compan_overview?.Length ?? 0) > 4000 || (dto.terms_condition?.Length ?? 0) > 4000 ||
+                (dto.address?.Length ?? 0) > 500)
+                return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "A text field is too long." }, "Invalid input."));
+
+            var entity = new VendorProfile
             {
-                var result = await _vendorprofile.InsertOrUpdateVendor(dto, HelperEnums.Action.Add.ToString());
+                vendor_profile_id = vendorId,
+                comcod = comcod,
+                company_name = dto.company_name,
+                address = dto.address,
+                compan_overview = dto.compan_overview,
+                company_bin = dto.company_bin,
+                contact_no = dto.contact_no,
+                license_no = dto.license_no,
+                num_of_client = dto.num_of_client,
+                ong_num_of_client = dto.ong_num_of_client,
+                contact_person = dto.contact_person,
+                secondary_contact_no = dto.secondary_contact_no,
+                designation = dto.designation,
+                is_available = dto.is_available,
+                experience = dto.experience,
+                terms_condition = dto.terms_condition,
+                business_type = dto.business_type,
+                payment_mode = dto.payment_mode,
+                owner_name = dto.owner_name,
+                owner_id_no = dto.owner_id_no,
+                owner_tin_no = dto.owner_tin_no,
+                bankcode = dto.bankcode,
+                branch = dto.branch,
+                acc_name = dto.acc_name,
+                acc_number = dto.acc_number,
+                routeno = dto.routeno,
+                links = dto.links,
+                user_photo = dto.user_photo
+            };
 
-                if (result == null)
-                {
-                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
-                }
-
-                return Ok(ApiResponse<dynamic>.SuccessResponse(result, message: "Profile updated successfully!"));
-            }
-
-            var updatedResult = await _vendorprofile.InsertOrUpdateVendor(dto, HelperEnums.Action.Update.ToString());
+            var updatedResult = await _vendorprofile.InsertOrUpdateVendor(entity, HelperEnums.Action.Update.ToString());
 
             if (updatedResult == null)
             {
                 return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Failed to update profile."));
             }
 
-            return Ok(ApiResponse<VendorProfile>.SuccessResponse(updatedResult, message: "Profile updated successfully"));
+            // Never return the stored entity (it contains the password hash and internal flags).
+            return Ok(ApiResponse<bool>.SuccessResponse(true, message: "Profile updated successfully"));
         }
 
         /// <summary>
