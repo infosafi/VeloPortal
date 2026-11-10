@@ -161,10 +161,10 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
                 servReqInf.created_by = TokUserId;
                 servReqInf.creator_role = TokUserType;
                 servReqInf.created_date = DateTime.Now;
-                servReqInf.is_done = false;
-                servReqInf.current_step = string.Empty;
-                servReqInf.customer_feedback = string.Empty;
-                servReqInf.satisfaction = 0;
+                servReqInf.is_done = servReqInf.is_done;
+                servReqInf.current_step = servReqInf.current_step ?? string.Empty;
+                servReqInf.customer_feedback =servReqInf.customer_feedback ?? string.Empty;
+                servReqInf.satisfaction = servReqInf.satisfaction;
                 servReqInf.is_canceled = false;
                 servReqInf.is_canceled_by = 0;
                 servReqInf.is_cancel_date = new DateTime(1900, 1, 1);
