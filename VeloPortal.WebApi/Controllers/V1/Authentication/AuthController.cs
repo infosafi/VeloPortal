@@ -370,7 +370,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [HttpPost("resend-signup-otp")]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         [AllowAnonymous]
-        public async Task<IActionResult> ResendSignupOtp([FromBody] DtoVerifySignupOtp dto)
+        public async Task<IActionResult> ResendSignupOtp([FromBody] DtoResendSignupOtp dto)
         {
             if (!string.IsNullOrWhiteSpace(dto.comcod) && !string.IsNullOrWhiteSpace(dto.email))
             {
