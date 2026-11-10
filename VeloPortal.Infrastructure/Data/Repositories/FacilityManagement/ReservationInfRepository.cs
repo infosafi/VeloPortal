@@ -77,11 +77,17 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                 var fromDate = obj.fromdate != default ? obj.fromdate : DateTime.UtcNow;
                 var toDate = obj.todate != default ? obj.todate : DateTime.UtcNow;
 
-                var existingData = await dbContext.ReservationInf.FirstOrDefaultAsync(a => a.room_booking_id == obj.room_booking_id);
-                bool datesChanged = existingData == null || existingData.fromdate != fromDate || existingData.todate != toDate;
+                if (fromDate >= toDate)
+                {
+                    throw new Exception("From date must be earlier than To date.");
+                }
 
-                if (datesChanged && await dbContext.ReservationInf.AnyAsync(r => r.comcod == obj.comcod && r.acccode == obj.acccode
-                    && r.rescode == obj.rescode && r.is_cancel == false && r.fromdate < toDate && fromDate < r.todate))
+                var existingData = await dbContext.ReservationInf.FirstOrDefaultAsync(a => a.room_booking_id == obj.room_booking_id);
+                bool datesChanged = existingData == null || existingData.fromdate != fromDate || existingData.todate != toDate || existingData.acccode != obj.acccode
+                                    || existingData.rescode != obj.rescode || (existingData.is_cancel && !obj.is_cancel);
+
+                if (datesChanged && await dbContext.ReservationInf.AnyAsync(r => r.room_booking_id != obj.room_booking_id && r.comcod == obj.comcod && r.acccode == obj.acccode
+                    && r.rescode == obj.rescode && r.is_cancel == false && r.fromdate <= toDate && fromDate <= r.todate))
                 {
                     throw new Exception($"A reservation already exists for this time slot ({fromDate} – {toDate}). Please choose a different time range.");
                 }
@@ -95,7 +101,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     existingData.presense = obj.presense;
                     existingData.is_cancel = obj.is_cancel;
                     existingData.is_approved = obj.is_approved;
-                    existingData.host_type = obj.host_type;
                     existingData.acccode = obj.acccode;
                     existingData.rescode = obj.rescode;
                     existingData.booking_fee = obj.booking_fee;
@@ -128,7 +133,6 @@ namespace VeloPortal.Infrastructure.Data.Repositories.FacilityManagement
                     review_date = obj.review_date != default ? obj.review_date : DateTime.UtcNow,
                     review_by = obj.review_by,
                     review_note = obj.review_note,
-                    host_type = obj.host_type,
                     booking_host = obj.booking_host,
                     booking_fee = obj.booking_fee
                 };

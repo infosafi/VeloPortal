@@ -33,8 +33,7 @@ namespace VeloPortal.Domain.Entities.FacilityManagement
         public DateTime review_date { get; set; }
         public int review_by { get; set; }
         public string review_note { get; set; } = string.Empty;
-        public string host_type { get; set; } = string.Empty;
-        public long booking_host { get; set; }
+        public string booking_host { get; set; }
         public decimal booking_fee { get; set; }
 
         public ReservationInf() { }
