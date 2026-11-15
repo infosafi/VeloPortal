@@ -4,7 +4,7 @@ namespace VeloPortal.Application.Interfaces.Procurement
 {
     public interface ISupplierInf
     {
-        Task<IEnumerable<DtoVendorSupply>?> GetSupplierSupplyItems(string? comcod);
+        Task<IEnumerable<DtoVendorSupply>?> GetSupplierSupplyItems(string? comcod, long? vendor_profile_id);
 
         Task<bool> DeleteVendorSuplyById(int supItemId);
     }

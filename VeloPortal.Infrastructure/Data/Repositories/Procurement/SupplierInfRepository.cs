@@ -28,7 +28,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
-        public async Task<IEnumerable<DtoVendorSupply>?> GetSupplierSupplyItems(string? comcod)
+        public async Task<IEnumerable<DtoVendorSupply>?> GetSupplierSupplyItems(string? comcod, long? vendor_profile_id)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     return await Task.FromResult<IEnumerable<DtoVendorSupply>?>(null);
                 }
                 IEnumerable<DtoVendorSupply>? lst = null;
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_PROCUREMENT_MGT", "Get_Supplier_Supply_Items");
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_PROCUREMENT_MGT", "Get_Supplier_Supply_Items", vendor_profile_id.ToString() ?? "");
                 if (ds == null || ds.Tables.Count == 0)
                 {
                     return await Task.FromResult<IEnumerable<DtoVendorSupply>?>(null);
