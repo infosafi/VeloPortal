@@ -11,8 +11,11 @@ namespace VeloPortal.Application.Interfaces.FacilityManagement
     public interface IReservationInf
     {
         // Get Reservation Information List based on company code, from date, to date, and account code
-        Task<IEnumerable<dynamic>?> GetReservationInfList(string? comcod, string? fromDate, string? toDate, string? acccode);
+        Task<DtoReservationInf?> GetReservationInfList(string? comcod, string? fromDate, string? toDate, string? acccode);
         // Insert or Update Reservation Information
         Task<ReservationInf?> InsertOrUpdateReservationInf(ReservationInf obj);
+
+        // Insert or Update Reservation Amenities
+        Task<List<DtoReqAmenitiesSave>?> InsertOrUpdateReservationAmenities(List<DtoReqAmenitiesSave> obj);
     }
 }

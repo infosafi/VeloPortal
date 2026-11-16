@@ -364,11 +364,11 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
 
             var responseData = await _reservationInf.GetReservationInfList(comcod, fromDate, toDate, acccode);
 
-            if (responseData == null || !responseData.Any())
-                return NotFound(ApiResponse<string>.FailureResponse(
-                    new List<string> { "No Reservation Information list is found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occurred"));
+            if (responseData == null)
+                return NotFound(ApiResponse<dynamic>.FailureResponse(
+                    new List<string> { "No Reservation Information is found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occurred"));
 
-            return Ok(ApiResponse<IEnumerable<dynamic>?>.SuccessResponse(responseData, message: "Retrieved Periodic Reservation Information records successfully"));
+            return Ok(ApiResponse<DtoReservationInf>.SuccessResponse(responseData, message: "Retrieved Periodic Reservation Information records successfully"));
         }
 
 
@@ -402,6 +402,37 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Bulk Import Reservation Information: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Save/Update Reservation Amenities
+        /// </summary>
+        /// <param name="obj">This the Post body Reservation Amenities</param>     
+        /// <returns>Reservation Amenities</returns>
+
+        [HttpPost("save-reservation-amenities")]
+        public async Task<IActionResult> InsertOrUpdateReservationAmenities([FromBody] List<DtoReqAmenitiesSave> obj)
+        {
+            try
+            {
+                if (obj == null || obj.Count == 0)
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { "Invalid request body." }, "Bad Request"));
+
+                var result = await _reservationInf.InsertOrUpdateReservationAmenities(obj);
+
+                if (result == null)
+                {
+                    var errorMessage = !string.IsNullOrEmpty(ErrorTrackingExtension.ErrorMsg) ? ErrorTrackingExtension.ErrorMsg : "An error occurred while processing your request. Please try again.";
+                    return BadRequest(ApiResponse<string>.FailureResponse(new List<string> { errorMessage }, ErrorTrackingExtension.ErrorMsg ?? "Failed to Save Reservation Amenities"));
+                }
+
+                return Ok(ApiResponse<List<DtoReqAmenitiesSave>>.SuccessResponse(result, message: "Reservation Amenities Save Successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse(new List<string> { $"Error saving Reservation Amenities: {ex.Message}" }, ErrorTrackingExtension.ErrorMsg ?? "Internal Server Error"));
             }
         }
 
