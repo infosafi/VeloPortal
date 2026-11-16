@@ -104,6 +104,7 @@ namespace VeloPortal.WebApi.Extensions
 
             #region start Project Management Service add
             services.AddScoped<IUnitInfo, UnitInfoRepository>();
+            services.AddScoped<IUnitAmenities, UnitAmenitiesRepository>();
 
             #endregion
 
