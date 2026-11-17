@@ -159,7 +159,7 @@ namespace VeloPortal.WebApi.Controllers.V1.FacilityManagement
             if (servReqInf.service_req_id == 0)
             {
                 servReqInf.created_by = TokUserId;
-                servReqInf.creator_role = TokUserType;
+                servReqInf.creator_role = servReqInf.creator_role;
                 servReqInf.created_date = DateTime.Now;
                 servReqInf.is_done = servReqInf.is_done;
                 servReqInf.current_step = servReqInf.current_step ?? string.Empty;
