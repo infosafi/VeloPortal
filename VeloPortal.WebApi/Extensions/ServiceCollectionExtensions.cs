@@ -6,6 +6,7 @@ using VeloPortal.Application.Interfaces.CEM;
 using VeloPortal.Application.Interfaces.Documentation;
 using VeloPortal.Application.Interfaces.FacilityManagement;
 using VeloPortal.Application.Interfaces.Procurement;
+using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Interfaces.ProjectManagement;
 using VeloPortal.Application.Interfaces.Sales;
 using VeloPortal.Application.Interfaces.SystemConfig;
@@ -18,6 +19,7 @@ using VeloPortal.Infrastructure.Data.Repositories.CEM;
 using VeloPortal.Infrastructure.Data.Repositories.Documentation;
 using VeloPortal.Infrastructure.Data.Repositories.FacilityManagement;
 using VeloPortal.Infrastructure.Data.Repositories.Procurement;
+using VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation;
 using VeloPortal.Infrastructure.Data.Repositories.ProjectManagement;
 using VeloPortal.Infrastructure.Data.Repositories.Sales;
 using VeloPortal.Infrastructure.Data.Repositories.SystemConfig;
@@ -146,6 +148,9 @@ namespace VeloPortal.WebApi.Extensions
             services.AddScoped<IPurOrderInf, PurOrderInfRepository>();
             #endregion
 
+            #region Project Implementation
+            services.AddScoped<IContractorProfile, ContractorRepository>();
+            #endregion
 
             #region CEM
             services.AddScoped<IPrjCustSelection, PrjCustSelectionRepository>();

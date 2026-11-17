@@ -6,6 +6,7 @@ using VeloPortal.Domain.Entities.CEM;
 using VeloPortal.Domain.Entities.Documentation;
 using VeloPortal.Domain.Entities.FacilityManagement;
 using VeloPortal.Domain.Entities.Procurement;
+using VeloPortal.Domain.Entities.ProjectImplementation;
 using VeloPortal.Domain.Entities.Sales;
 using VeloPortal.Domain.Entities.SystemConfig;
 
@@ -39,6 +40,11 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         #endregion
 
         #region Common       
+
+        #endregion
+
+        #region Project Implementation       
+        public DbSet<ContractorProfile> ContractorProfile { get; set; }
 
         #endregion
 
