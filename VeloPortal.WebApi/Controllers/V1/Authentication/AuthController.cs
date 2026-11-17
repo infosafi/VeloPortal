@@ -9,8 +9,10 @@ using VeloPortal.Application.DTOs.Authentication;
 using VeloPortal.Application.Interfaces.Authentication;
 using VeloPortal.Application.Interfaces.Common;
 using VeloPortal.Application.Interfaces.Procurement;
+using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.ProjectImplementation;
 using VeloPortal.Domain.Entities.SystemConfig;
 using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
@@ -29,17 +31,19 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         private readonly IPortalAuthUser _userRepo;
         private readonly IPassRecovery _passRecovery;
         private readonly IVendorProfile _vendorprofile;
+        private readonly IContractorProfile _contractorProfile;
         private readonly ILoginLogs _loginlogs;
         private readonly ISecureOtp _secureOtp;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
         private readonly byte[] _otpKey;
 
         public AuthController(IJwtService jwtService, IRefreshTokenService refreshRepo, ILoginLogs loginlogs,
-            IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile, ISecureOtp secureOtp,
+            IPortalAuthUser userRepo, IPassRecovery passRecovery, IVendorProfile vendorprofile, IContractorProfile contractorProfile, ISecureOtp secureOtp,
             Microsoft.Extensions.Caching.Memory.IMemoryCache cache, Microsoft.Extensions.Options.IOptions<JwtSettings> jwtOptions)
         {
             _secureOtp = secureOtp;
             _cache = cache;
+            _contractorProfile = contractorProfile;
             // derived key: OTP HMAC is independent of the JWT signing key itself
             _otpKey = SHA256.HashData(Encoding.UTF8.GetBytes("otp-hmac:" + (jwtOptions.Value.Secret ?? "")));
             _jwtService = jwtService;
@@ -262,6 +266,9 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             if (string.IsNullOrWhiteSpace(dto.company_name))
                 return BadRequest(new { Success = false, message = "Company Name is required!" });
 
+            if (string.IsNullOrWhiteSpace(dto.user_type))
+                return BadRequest(new { Success = false, message = "User Type is required!" });
+
             // Input hardening: format/length checks and no markup (stored-XSS / junk accounts)
             dto.email = dto.email.Trim();
             dto.company_name = dto.company_name.Trim();
@@ -277,47 +284,90 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             if (dto.comcod.Length > 10 || !dto.comcod.All(char.IsDigit))
                 return BadRequest(new { Success = false, message = "Company Code is invalid." });
 
-            // Public signup can only ever create a vendor, regardless of what the client sends.
-            dto.user_type = "vendor";
-
             try
             {
+                if (dto.user_type == "vendor") { 
 
-                var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
-                if (existingUser != null && existingUser.unq_id != 0)
-                {
-                    return BadRequest(new { Success = false, message = "User with this email already exists." });
+                    var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
+                    if (existingUser != null && existingUser.unq_id != 0)
+                    {
+                        return BadRequest(new { Success = false, message = "User with this email already exists." });
+                    }
+
+                    var newVendor = new VendorProfile
+                    {
+                        comcod = dto.comcod,
+                        company_name = dto.company_name ?? "",
+                        vendor_email = dto.email,
+                        contact_no = dto.phone,
+                        vendor_password = EncryptionExtension.PasswordEnc(dto.password),
+                        created_date = DateTime.Now,
+                        is_available = true,
+                        is_verify_acc = false,
+                        is_approved = false,
+                        is_hold = false,
+                        is_audit = false
+                    };
+
+                    var result = await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+
+                    if (result == null)
+                    {
+                        return BadRequest(new { Success = false, message = "Registration failed." });
+                    }
+
+                    // Verify the e-mail address: send a one-time code. The vendor stays unverified until it is confirmed.
+                    await SendVendorSignupOtpAsync(dto.comcod, (int)result.vendor_profile_id, dto.email, dto.company_name);
+
+                    // Never echo the stored profile (it contains the password hash) back to the caller.
+                    return Ok(new { Success = true, email_verification_required = true,
+                        message = "Registration successful! A verification code was sent to your email. After verifying, please wait for account approval." });
+
                 }
-
-                var newVendor = new VendorProfile
+                else if (dto.user_type == "contractor")
                 {
-                    comcod = dto.comcod,
-                    company_name = dto.company_name ?? "Shaha Cement",
-                    vendor_email = dto.email,
-                    contact_no = dto.phone,
-                    vendor_password = EncryptionExtension.PasswordEnc(dto.password), 
-                    created_date = DateTime.Now,
-                    is_available = true,
-                    is_verify_acc = false,
-                    is_approved = false,
-                    is_hold = false,
-                    is_audit = false
-                };
 
-                var result = await _vendorprofile.InsertOrUpdateVendor(newVendor, HelperEnums.Action.Add.ToString());
+                    var existingUser = await _userRepo.FindUserByEmailOrPhoneAsync(dto.comcod, dto.user_type, dto.email);
+                    if (existingUser != null && existingUser.unq_id != 0)
+                    {
+                        return BadRequest(new { Success = false, message = "User with this email already exists." });
+                    }
 
-                if (result == null)
-                {
-                    return BadRequest(new { Success = false, message = "Registration failed." });
+                    var newContractor = new ContractorProfile
+                    {
+                        comcod = dto.comcod,
+                        company_name = dto.company_name ?? "",
+                        vendor_email = dto.email,
+                        contact_no = dto.phone,
+                        contractor_password = EncryptionExtension.PasswordEnc(dto.password),
+                        created_date = DateTime.Now,
+                        is_available = true,
+                        is_verify_acc = false,
+                        is_approved = false,
+                        is_hold = false,
+                        is_audit = false
+                    };
+
+                    var result = await _contractorProfile.InsertOrUpdateContractor(newContractor);
+
+                    if (result == null)
+                    {
+                        return BadRequest(new { Success = false, message = "Registration failed." });
+                    }
+
+                    // Verify the e-mail address: send a one-time code. The vendor stays unverified until it is confirmed.
+                    await SendVendorSignupOtpAsync(dto.comcod, (int)result.contractor_profile_id, dto.email, dto.company_name);
+
+                    // Never echo the stored profile (it contains the password hash) back to the caller.
+                    return Ok(new
+                    {
+                        Success = true,
+                        email_verification_required = true,
+                        message = "Registration successful! A verification code was sent to your email. After verifying, please wait for account approval."
+                    });
+
                 }
-
-                // Verify the e-mail address: send a one-time code. The vendor stays unverified until it is confirmed.
-                await SendVendorSignupOtpAsync(dto.comcod, (int)result.vendor_profile_id, dto.email, dto.company_name);
-
-                // Never echo the stored profile (it contains the password hash) back to the caller.
-                return Ok(new { Success = true, email_verification_required = true,
-                    message = "Registration successful! A verification code was sent to your email. After verifying, please wait for account approval." });
-
+                return BadRequest(new { Success = false, message = "Invalid user type." });
             }
             catch (Exception ex)
             {

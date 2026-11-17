@@ -7,6 +7,6 @@
         public string email { get; set; } = string.Empty;
         public string phone { get; set; } = string.Empty;
         public string password { get; set; } = string.Empty;
-        public string user_type { get; set; } = "vendor";
+        public string user_type { get; set; } = string.Empty;
     }
 }
