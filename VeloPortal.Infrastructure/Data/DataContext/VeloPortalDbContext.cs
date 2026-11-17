@@ -52,6 +52,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
         public DbSet<ServReqInf> ServReqInf { get; set; }
         public DbSet<ReservationInf> ReservationInf { get; set; }
         public DbSet<AdvicesInf> AdvicesInf { get; set; }
+        public DbSet<ReqAmenities> ReqAmenities { get; set; }
         #endregion
 
         #region Documentation

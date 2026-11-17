@@ -17,7 +17,7 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectManagement
     [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize]
     [SwaggerTag("Project Management")]
-    public class ProjectController(IUnitInfo _unitInfo) : ControllerBase
+    public class ProjectController(IUnitInfo _unitInfo, IUnitAmenities _unitAmenities) : ControllerBase
     {
 
         #region UnitInfo
@@ -83,5 +83,53 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectManagement
             }
         }
         #endregion UnitInfo
+
+        #region Unit Amenities
+
+        /// <summary>
+        /// Retrieves unit amenities for a given company and optional filters.
+        /// </summary>
+        /// <param name="comcod">Company code (required, e.g., 11001).</param>
+        /// <param name="unitid">Unit ID filter (optional; 0 = all units).</param>
+        /// <param name="acccode">Project account code filter (optional).</param>
+        /// <param name="rescode">Unit resource code filter (optional). Requires acccode — the same rescode can exist across multiple projects.</param>
+        [HttpGet("get-unit-amenities")]
+        [SwaggerOperation(
+            Summary = "Get Unit Amenities",
+            Description = "Returns amenity rows with gencode/frequency descriptions. Filter by unitid, acccode, or rescode (rescode requires acccode to be specified)."
+        )]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<dynamic>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUnitAmenities(
+            [BindRequired][FromQuery] string comcod,
+            [FromQuery] long unitid = 0,
+            [FromQuery] string? acccode = null,
+            [FromQuery] string? rescode = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(comcod))
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        new List<string> { "comcod is required." }, "Invalid Request Parameters"));
+
+                if (!string.IsNullOrWhiteSpace(rescode) && string.IsNullOrWhiteSpace(acccode))
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        new List<string> { "acccode is required when rescode is provided (same rescode can exist across multiple projects)." },
+                        "Invalid Request Parameters"));
+
+                var data = await _unitAmenities.GetUnitAmenitiesAsync(
+                    comcod, unitid,
+                    acccode ?? "",
+                    rescode ?? "");
+                return Ok(ApiResponse<IEnumerable<dynamic>>.SuccessResponse(data, "Unit amenities loaded."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.FailureResponse($"Error retrieving unit amenities: {ex.Message}"));
+            }
+        }
+        #endregion Unit Amenities
     }
 }

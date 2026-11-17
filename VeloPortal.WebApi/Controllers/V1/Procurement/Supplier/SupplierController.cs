@@ -20,13 +20,14 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement.Supplier
         /// Get Supplier Supply Items List based on company and reference parameters.
         /// </summary>
         /// <param name="comcod">The Company Code, such as 11001.</param>
+        /// <param name="vendor_profile_id">The vendor profile unique id like 27.</param>
         /// <param name="refid">The Reference/Vendor ID used for filtering supply items.</param> 
         /// <param name="rescode">The Resource Code prefix to filter specific item types.</param>
         /// <returns>A collection of Vendor Supply details including rates, lead times, and experience.</returns>
         [HttpGet("get-supplier-supply-items")]
-        public async Task<IActionResult> GetSupplierSupplyItemsList(string? comcod)
+        public async Task<IActionResult> GetSupplierSupplyItemsList(string? comcod, long? vendor_profile_id)
         {
-            var response = await _supplierInf.GetSupplierSupplyItems(comcod);
+            var response = await _supplierInf.GetSupplierSupplyItems(comcod, vendor_profile_id);
 
             if (response == null)
                 return NotFound(ApiResponse<string>.FailureResponse(
