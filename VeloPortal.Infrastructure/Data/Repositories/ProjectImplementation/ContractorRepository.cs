@@ -150,7 +150,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
             }
         }
 
-        public async Task<dynamic?> FindUserByContractorIdAsync(string comcod, string contractor_profile_id)
+        public async Task<dynamic?> FindUserByContractorIdAsync(string comcod,string? fromdate, string? todate, string contractor_profile_id)
         {
 
             try
@@ -160,7 +160,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
                     return await Task.FromResult<ContractorProfile?>(null);
                 }
 
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_prj.SP_SUBCONTRACTING_MGT", "Get_Contractor_Info", contractor_profile_id ?? "");
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_prj.SP_SUBCONTRACTING_MGT", "Get_Contractor_Info",fromdate ?? "", todate ?? "", contractor_profile_id ?? "");
 
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
