@@ -26,7 +26,7 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
         /// Retrieves the full profile of a contractor by email.
         /// </summary>
         [HttpGet("get-contractor-profile")]
-        public async Task<IActionResult> GetContractorProfile(string comcod, string? contractor_profile_id)
+        public async Task<IActionResult> GetContractorProfile(string comcod, string? fromdate, string? todate, string? contractor_profile_id)
         {
             if (string.IsNullOrEmpty(contractor_profile_id))
             {
@@ -34,7 +34,7 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
             }
 
 
-            var user = await _contractorProfile.FindUserByContractorIdAsync(comcod, contractor_profile_id);
+            var user = await _contractorProfile.FindUserByContractorIdAsync(comcod, fromdate ?? "", todate ?? "", contractor_profile_id ?? "");
             if (user == null)
                 return NotFound(new { Success = false, message = "Profile not found." });
 
