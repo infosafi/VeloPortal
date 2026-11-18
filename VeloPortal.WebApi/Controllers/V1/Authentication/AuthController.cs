@@ -370,7 +370,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     }
 
                     // Verify the e-mail address: send a one-time code. The vendor stays unverified until it is confirmed.
-                    await SendVendorSignupOtpAsync(dto.comcod, (int)result.contractor_profile_id, dto.email, dto.company_name);
+                    await SendContractorSignupOtpAsync(dto.comcod, (int)result.contractor_profile_id, dto.email, dto.company_name);
 
                     // Never echo the stored profile (it contains the password hash) back to the caller.
                     return Ok(new
