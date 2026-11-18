@@ -2,13 +2,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VeloPortal.Application.DTOs.Procurement;
-using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.DTOs.ProjectImplementation;
+using VeloPortal.Application.Interfaces.Procurement;
+using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.ProjectImplementation;
 using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
-using VeloPortal.Domain.Entities.ProjectImplementation;
 
 namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
 {
@@ -22,6 +23,25 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
         public ContractorController(IContractorProfile contractorProfile)
         {
             _contractorProfile = contractorProfile;
+        }
+
+        /// <summary>
+        /// Retrieves the full profile of a contractor by email.
+        /// </summary>
+        [HttpGet("get-contractor-profile")]
+        public async Task<IActionResult> GetContractorProfile(string comcod, string? contractor_profile_id)
+        {
+            if (string.IsNullOrEmpty(contractor_profile_id))
+            {
+                return BadRequest(ApiResponse<dynamic>.FailureResponse(new List<string> { "Contractor profile id is required" }));
+            }
+
+
+            var user = await _contractorProfile.FindUserByContractorIdAsync(comcod, contractor_profile_id);
+            if (user == null)
+                return NotFound(new { Success = false, message = "Profile not found." });
+
+            return Ok(new { Success = true, data = user });
         }
 
 
@@ -54,32 +74,32 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
             {
                 contractor_profile_id = contractorId,
                 comcod = comcod,
-                company_name = dto.company_name,
-                address = dto.address,
-                compan_overview = dto.compan_overview,
-                company_bin = dto.company_bin,
-                contact_no = dto.contact_no,
-                license_no = dto.license_no,
-                num_of_client = dto.num_of_client,
-                ong_num_of_client = dto.ong_num_of_client,
-                contact_person = dto.contact_person,
-                secondary_contact_no = dto.secondary_contact_no,
-                designation = dto.designation,
-                is_available = dto.is_available,
-                experience = dto.experience,
-                terms_condition = dto.terms_condition,
-                business_type = dto.business_type,
-                payment_mode = dto.payment_mode,
-                owner_name = dto.owner_name,
-                owner_id_no = dto.owner_id_no,
-                owner_tin_no = dto.owner_tin_no,
-                bankcode = dto.bankcode,
-                branch = dto.branch,
-                acc_name = dto.acc_name,
-                acc_number = dto.acc_number,
-                routeno = dto.routeno,
-                links = dto.links,
-                user_photo = dto.user_photo
+                company_name = dto.company_name ?? "",
+                address = dto.address ?? "",
+                compan_overview = dto.compan_overview ?? "",
+                company_bin = dto.company_bin ?? "",
+                contact_no = dto.contact_no ?? "",
+                license_no = dto.license_no ?? "",
+                num_of_client = dto.num_of_client ?? 0,
+                ong_num_of_client = dto.ong_num_of_client ?? 0,
+                contact_person = dto.contact_person ?? "",
+                secondary_contact_no = dto.secondary_contact_no ?? "",
+                designation = dto.designation ?? "",
+                is_available = dto.is_available ?? false,
+                experience = dto.experience ?? 0,
+                terms_condition = dto.terms_condition ?? "",
+                business_type = dto.business_type ?? 0,
+                payment_mode = dto.payment_mode ?? "",
+                owner_name = dto.owner_name ?? "",
+                owner_id_no = dto.owner_id_no ?? "",
+                owner_tin_no = dto.owner_tin_no ?? "",
+                bankcode = dto.bankcode ?? "",
+                branch = dto.branch ?? "",
+                acc_name = dto.acc_name ?? "",
+                acc_number = dto.acc_number ?? "",
+                routeno = dto.routeno ?? "",
+                links = dto.links ?? "",
+                user_photo = dto.user_photo ?? ""
             };
 
             var updatedResult = await _contractorProfile.InsertOrUpdateContractor(entity);

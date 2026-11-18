@@ -1,8 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Data;
+using VeloPortal.Application.DTOs.Procurement;
+using VeloPortal.Application.DTOs.ProjectImplementation;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.ProjectImplementation;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
@@ -145,6 +149,59 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
                 ErrorTrackingExtension.SetError(ex.InnerException ?? ex);
                 _logger.LogError(ex, "Update failed");
                 return null;
+            }
+        }
+
+        public async Task<dynamic?> FindUserByContractorIdAsync(string comcod, string contractor_profile_id)
+        {
+
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<ContractorProfile?>(null);
+                }
+
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod, "itv_prj.SP_SUBCONTRACTING_MGT", "Get_Contractor_Info", contractor_profile_id ?? "");
+
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<ContractorProfile?>(null);
+                }
+
+                var userList = ds.Tables[0].DataTableToDynamicList();
+                var user = userList?.FirstOrDefault();
+
+                return await Task.FromResult(user);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<ContractorProfile?>(null);
+            }
+        }
+        public async Task<IEnumerable<DtoContractorDashboardCounter>?> GetContractorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoContractorDashboardCounter>?>(null);
+                }
+                IEnumerable<DtoContractorDashboardCounter>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_VENDOR_REPORTS", "Vendor_Dashboard_Counter", user_role ?? "", user_id ?? "", res_code ?? "");
+                if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoContractorDashboardCounter>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoContractorDashboardCounter>();
+                return await Task.FromResult<IEnumerable<DtoContractorDashboardCounter>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoContractorDashboardCounter>?>(null);
             }
         }
 

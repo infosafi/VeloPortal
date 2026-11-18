@@ -16,43 +16,43 @@ namespace VeloPortal.Domain.Entities.ProjectImplementation
 
         public long contractor_profile_id { get; set; }
         public string comcod { get; set; } = string.Empty;
-        public string? contractorid { get; set; } = string.Empty;
-        public string? company_name { get; set; } = string.Empty;
-        public string? address { get; set; } = string.Empty;
-        public string? compan_overview { get; set; } = string.Empty;
-        public string? company_bin { get; set; } = string.Empty;
-        public string? contact_no { get; set; } = string.Empty;
-        public string? contractor_email { get; set; } = string.Empty;
-        public string? license_no { get; set; } = string.Empty;
-        public int? num_of_client { get; set; }
-        public int? ong_num_of_client { get; set; }
-        public string? contact_person { get; set; } = string.Empty;
-        public string? secondary_contact_no { get; set; } = string.Empty;
-        public string? designation { get; set; } = string.Empty;
-        public string? contractor_password { get; set; } = string.Empty;
-        public bool? is_available { get; set; } = true;
-        public bool? is_verify_acc { get; set; } = false;
-        public bool? is_email_verify { get; set; } = false;
-        public decimal? experience { get; set; }
-        public string? terms_condition { get; set; } = string.Empty;
-        public int? business_type { get; set; }
-        public string? payment_mode { get; set; } = string.Empty;
-        public string? owner_name { get; set; } = string.Empty;
-        public string? owner_id_no { get; set; } = string.Empty;
-        public string? owner_tin_no { get; set; } = string.Empty;
-        public string? bankcode { get; set; } = string.Empty;
-        public string? branch { get; set; } = string.Empty;
-        public string? acc_name { get; set; } = string.Empty;
-        public string? acc_number { get; set; } = string.Empty;
-        public string? routeno { get; set; } = string.Empty;
-        public string? links { get; set; } = string.Empty;
-        public DateTime? created_date { get; set; } = new DateTime(1900, 01, 01);
-        public string? rescode { get; set; } = string.Empty;
+        public string contractorid { get; set; } = string.Empty;
+        public string company_name { get; set; } = string.Empty;
+        public string address { get; set; } = string.Empty;
+        public string compan_overview { get; set; } = string.Empty;
+        public string company_bin { get; set; } = string.Empty;
+        public string contact_no { get; set; } = string.Empty;
+        public string contractor_email { get; set; } = string.Empty;
+        public string license_no { get; set; } = string.Empty;
+        public int num_of_client { get; set; }
+        public int ong_num_of_client { get; set; }
+        public string contact_person { get; set; } = string.Empty;
+        public string secondary_contact_no { get; set; } = string.Empty;
+        public string designation { get; set; } = string.Empty;
+        public string contractor_password { get; set; } = string.Empty;
+        public bool is_available { get; set; } = true;
+        public bool is_verify_acc { get; set; } = false;
+        public bool is_email_verify { get; set; } = false;
+        public decimal experience { get; set; }
+        public string terms_condition { get; set; } = string.Empty;
+        public int business_type { get; set; }
+        public string payment_mode { get; set; } = string.Empty;
+        public string owner_name { get; set; } = string.Empty;
+        public string owner_id_no { get; set; } = string.Empty;
+        public string owner_tin_no { get; set; } = string.Empty;
+        public string bankcode { get; set; } = string.Empty;
+        public string branch { get; set; } = string.Empty;
+        public string acc_name { get; set; } = string.Empty;
+        public string acc_number { get; set; } = string.Empty;
+        public string routeno { get; set; } = string.Empty;
+        public string links { get; set; } = string.Empty;
+        public DateTime created_date { get; set; } = new DateTime(1900, 01, 01);
+        public string rescode { get; set; } = string.Empty;
         public bool is_audit { get; set; }
-        public string? user_photo { get; set; } = string.Empty;
-        public bool? is_hold { get; set; } = false;
-        public bool? is_approved { get; set; } = false;
-        public bool? is_rejected { get; set; } = false;
+        public string user_photo { get; set; } = string.Empty;
+        public bool is_hold { get; set; } = false;
+        public bool is_approved { get; set; } = false;
+        public bool is_rejected { get; set; } = false;
 
         public ContractorProfile() { }
         public ContractorProfile(long contractor_profile_id_, string comcod_, string contractorid_, string company_name_, string address_, string compan_overview_, string company_bin_, string contact_no_, string contractor_email_, string license_no_, int num_of_client_, int ong_num_of_client_, string contact_person_, string secondary_contact_no_, string designation_, string contractor_password_, bool is_available_, bool is_verify_acc_, bool is_email_verify_, decimal experience_, string terms_condition_, int business_type_, string payment_mode_, string owner_name_, string owner_id_no_, string owner_tin_no_, string bankcode_, string branch_, string acc_name_, string acc_number_, string routeno_, string links_, DateTime created_date_, string rescode_, bool is_audit_, string user_photo_, bool is_hold_, bool is_approved_ , bool is_rejected_)
