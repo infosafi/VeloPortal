@@ -112,5 +112,26 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
             // Never return the stored entity (it contains the password hash and internal flags).
             return Ok(ApiResponse<bool>.SuccessResponse(true, message: "Profile updated successfully"));
         }
+
+        /// <summary>
+        /// Get Contractor Dashboard counters for quotations, work orders
+        /// </summary>
+        /// <param name="comcod">Company code</param>
+        /// <param name="user_role">User role identifier (e.g., '14' for Contractor)</param>
+        /// <param name="unq_id">Unique user/contractor identifier</param>
+        /// <returns>A collection of dashboard metrics including quotation counts and order amounts</returns>
+
+        [HttpGet("get-contractor-dashboard-counter")]
+        public async Task<IActionResult> GetContractorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code)
+        {
+            var response = await _contractorProfile.GetContractorDashboardCounter(comcod, user_role, user_id, res_code);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "No Contractor Dashboard Data Found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            return Ok(ApiResponse<IEnumerable<DtoContractorDashboardCounter>>.SuccessResponse(response, message: response.Count() + " Contractor Dashboard Counter Data Found"));
+
+        }
     }
 }
