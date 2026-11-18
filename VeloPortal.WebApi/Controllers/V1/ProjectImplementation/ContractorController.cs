@@ -1,14 +1,11 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.DTOs.ProjectImplementation;
-using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
-using VeloPortal.Domain.Entities.Authentication;
+using VeloPortal.Domain.Entities.Procurement;
 using VeloPortal.Domain.Entities.ProjectImplementation;
-using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 
 namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
@@ -19,7 +16,7 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
     [Route("api/v{version:apiVersion}/[controller]")]
     public class ContractorController : ControllerBase
     {
-       private readonly IContractorProfile _contractorProfile;
+        private readonly IContractorProfile _contractorProfile;
         public ContractorController(IContractorProfile contractorProfile)
         {
             _contractorProfile = contractorProfile;
@@ -132,6 +129,29 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
 
             return Ok(ApiResponse<IEnumerable<DtoContractorDashboardCounter>>.SuccessResponse(response, message: response.Count() + " Contractor Dashboard Counter Data Found"));
 
+        }
+
+        /// <summary>
+        /// Save Supply Item.
+        /// </summary>
+        /// <param name="supplyItems">All Save Supply Item.</param>
+        /// <returns><returns>
+        [HttpPost("save-supplier-items")]
+        public async Task<IActionResult> SaveVendorSupply([FromBody] List<ContractorSuply> supplyItems)
+        {
+            try
+            {
+                var response = await _contractorProfile.SaveContractorSuply(supplyItems);
+                if (response)
+                {
+                    return Ok(ApiResponse<bool>.SuccessResponse(response, message: "Contractor Supply saved successfully"));
+                }
+                return BadRequest(ApiResponse<bool>.FailureResponse(new List<string> { ErrorTrackingExtension.ErrorMsg ?? "Error Occured" }, "Contractor Supply save Failed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving  Service resources: {ex.Message}" }, "Internal Server Error"));
+            }
         }
     }
 }

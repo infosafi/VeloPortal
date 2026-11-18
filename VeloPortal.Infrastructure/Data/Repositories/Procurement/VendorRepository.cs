@@ -92,7 +92,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
                     return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(null);
                 }
                 IEnumerable<DtoVendorDashboardCounter>? lst = null;
-                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_VENDOR_REPORTS", "Vendor_Dashboard_Counter", user_role, user_id, res_code);
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_scm.SP_VENDOR_REPORTS", "Vendor_Dashboard_Counter", user_role ?? "", user_id ?? "", res_code ?? "");
                 if (ds == null || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
                 {
                     return await Task.FromResult<IEnumerable<DtoVendorDashboardCounter>?>(null);

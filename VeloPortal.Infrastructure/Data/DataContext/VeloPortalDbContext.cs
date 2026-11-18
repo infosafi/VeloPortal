@@ -45,6 +45,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region Project Implementation       
         public DbSet<ContractorProfile> ContractorProfile { get; set; }
+        public DbSet<ContractorSuply> ContractorSuply { get; set; }
 
         #endregion
 

@@ -10,7 +10,7 @@ namespace VeloPortal.Domain.Entities.Authentication
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long vendor_profile_id { get; set; }
-        public string comcod { get; set; }
+        public string comcod { get; set; } = string.Empty;
         public string? vendorid { get; set; }
         [StringLength(200)]
         public string? company_name { get; set; }
