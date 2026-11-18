@@ -22,7 +22,7 @@ namespace VeloPortal.Domain.Entities.ProjectImplementation
         public string? compan_overview { get; set; } = string.Empty;
         public string? company_bin { get; set; } = string.Empty;
         public string? contact_no { get; set; } = string.Empty;
-        public string? vendor_email { get; set; } = string.Empty;
+        public string? contractor_email { get; set; } = string.Empty;
         public string? license_no { get; set; } = string.Empty;
         public int? num_of_client { get; set; }
         public int? ong_num_of_client { get; set; }
@@ -46,7 +46,7 @@ namespace VeloPortal.Domain.Entities.ProjectImplementation
         public string? acc_number { get; set; } = string.Empty;
         public string? routeno { get; set; } = string.Empty;
         public string? links { get; set; } = string.Empty;
-        public DateTime? created_date { get; set; }
+        public DateTime? created_date { get; set; } = new DateTime(1900, 01, 01);
         public string? rescode { get; set; } = string.Empty;
         public bool is_audit { get; set; }
         public string? user_photo { get; set; } = string.Empty;
@@ -55,7 +55,7 @@ namespace VeloPortal.Domain.Entities.ProjectImplementation
         public bool? is_rejected { get; set; } = false;
 
         public ContractorProfile() { }
-        public ContractorProfile(long contractor_profile_id_, string comcod_, string contractorid_, string company_name_, string address_, string compan_overview_, string company_bin_, string contact_no_, string vendor_email_, string license_no_, int num_of_client_, int ong_num_of_client_, string contact_person_, string secondary_contact_no_, string designation_, string contractor_password_, bool is_available_, bool is_verify_acc_, bool is_email_verify_, decimal experience_, string terms_condition_, int business_type_, string payment_mode_, string owner_name_, string owner_id_no_, string owner_tin_no_, string bankcode_, string branch_, string acc_name_, string acc_number_, string routeno_, string links_, DateTime created_date_, string rescode_, bool is_audit_, string user_photo_, bool is_hold_, bool is_approved_ , bool is_rejected_)
+        public ContractorProfile(long contractor_profile_id_, string comcod_, string contractorid_, string company_name_, string address_, string compan_overview_, string company_bin_, string contact_no_, string contractor_email_, string license_no_, int num_of_client_, int ong_num_of_client_, string contact_person_, string secondary_contact_no_, string designation_, string contractor_password_, bool is_available_, bool is_verify_acc_, bool is_email_verify_, decimal experience_, string terms_condition_, int business_type_, string payment_mode_, string owner_name_, string owner_id_no_, string owner_tin_no_, string bankcode_, string branch_, string acc_name_, string acc_number_, string routeno_, string links_, DateTime created_date_, string rescode_, bool is_audit_, string user_photo_, bool is_hold_, bool is_approved_ , bool is_rejected_)
         {
             this.contractor_profile_id = contractor_profile_id_;
             this.comcod = comcod_;
@@ -65,7 +65,7 @@ namespace VeloPortal.Domain.Entities.ProjectImplementation
             this.compan_overview = compan_overview_;
             this.company_bin = company_bin_;
             this.contact_no = contact_no_;
-            this.vendor_email = vendor_email_;
+            this.contractor_email = contractor_email_;
             this.license_no = license_no_;
             this.num_of_client = num_of_client_;
             this.ong_num_of_client = ong_num_of_client_;

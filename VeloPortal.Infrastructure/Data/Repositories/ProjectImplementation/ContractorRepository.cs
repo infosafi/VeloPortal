@@ -1,17 +1,9 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
-using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.ProjectImplementation;
-using VeloPortal.Domain.Enums;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.SPHelper;
@@ -23,19 +15,76 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
         private readonly IDbContextFactory<VeloPortalDbContext> _dbContextFactory;
         private readonly IConfiguration _configuration;
         private readonly SPProcessAccess? _spProcessAccess;
+        private readonly ILogger<ContractorRepository> _logger;
 
 
-        public ContractorRepository(
-          IDbContextFactory<VeloPortalDbContext> dbContextFactory,
-          IConfiguration configuration)
+        public ContractorRepository(IDbContextFactory<VeloPortalDbContext> dbContextFactory, IConfiguration configuration, ILogger<ContractorRepository> logger)
         {
             _dbContextFactory = dbContextFactory;
             _configuration = configuration;
+            _logger = logger;
 
             var connectionString = _configuration.GetConnectionString(DefaultSettings.DefaultDbconnection);
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
-        public async Task<ContractorProfile> InsertOrUpdateContractor(ContractorProfile obj)
+
+        public async Task<bool> IsContractorLoginAllowedAsync(string comcod, long contractorProfileId)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                return await dbContext.ContractorProfile.AsNoTracking().AnyAsync(p => p.comcod == comcod && p.contractor_profile_id == contractorProfileId &&
+                                                                                      p.is_email_verify == true && p.is_hold != true);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
+            }
+        }
+
+
+        public async Task<bool> SetEmailVerifiedAsync(string comcod, long contractorProfileId)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                var v = await dbContext.ContractorProfile.FirstOrDefaultAsync(p => p.comcod == comcod && p.contractor_profile_id == contractorProfileId);
+
+                if (v == null) return false;
+
+                v.is_email_verify = true;
+
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
+            }
+        }
+
+
+        public async Task<ContractorProfile?> FindContractorByEmailAsync(string comcod, string email)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                return await dbContext.ContractorProfile.AsNoTracking().FirstOrDefaultAsync(p => p.comcod == comcod && p.contractor_email == email);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return null;
+            }
+        }
+
+        
+        public async Task<ContractorProfile?> InsertOrUpdateContractor(ContractorProfile obj)
         {
             try
             {
@@ -44,87 +93,46 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
 
                 if (obj.contractor_profile_id == 0)
                 {
-                    var lastContractorId = await dbContext.ContractorProfile
-                        .OrderByDescending(c => c.contractorid)
-                        .Select(c => c.contractorid)
-                        .FirstOrDefaultAsync();
+                    var lastId = await dbContext.ContractorProfile.OrderByDescending(c => c.contractorid).Select(c => c.contractorid).FirstOrDefaultAsync();
 
-                    int nextIdNumber = 1;
-                    if (!string.IsNullOrEmpty(lastContractorId) && int.TryParse(lastContractorId, out int lastId))
-                    {
-                        nextIdNumber = lastId + 1;
-                    }
-
-                    // "D10" formats the integer with leading zeros to 10 digits
-                    obj.contractorid = nextIdNumber.ToString("D10");
-                    obj.experience ??= 0;
-                    obj.business_type ??= 0;
-                    obj.num_of_client ??= 0;
-                    obj.ong_num_of_client ??= 0;
-                    obj.company_bin ??= "";
-                    obj.compan_overview ??= "";
-                    obj.acc_name ??= "";
-                    obj.acc_number ??= "";
-                    obj.address ??= "";
-                    obj.bankcode ??= "";
-                    obj.branch ??= "";
-                    obj.routeno ??= "";
-                    obj.designation ??= "";
-                    obj.contact_person ??= "";
-                    obj.secondary_contact_no ??= "";
-                    obj.owner_name ??= "";
-                    obj.owner_id_no ??= "";
-                    obj.owner_tin_no ??= "";
-                    obj.rescode ??= "";
-                    obj.license_no ??= "";
-                    obj.terms_condition ??= "";
-                    obj.payment_mode ??= "";
-                    obj.links ??= "";
-                    obj.user_photo ??= "";
+                    obj.contractorid = (int.TryParse(lastId, out var n) ? n + 1 : 1).ToString("D10");
 
                     await dbContext.ContractorProfile.AddAsync(obj);
                 }
                 else
                 {
-                    var existingContractor = await dbContext.ContractorProfile
-                        .FirstOrDefaultAsync(c =>
-                            c.comcod == obj.comcod &&
-                            c.contractor_profile_id == obj.contractor_profile_id);
+                    var existing = await dbContext.ContractorProfile.FirstOrDefaultAsync(c => c.comcod == obj.comcod && c.contractor_profile_id == obj.contractor_profile_id)
+                                        ?? throw new InvalidOperationException("Contractor not found.");
 
-                    if (existingContractor == null)
-                    {
-                        return null;
-                    }
 
-                    existingContractor.company_name = obj.company_name;
-                    existingContractor.address = obj.address;
-                    existingContractor.compan_overview = obj.compan_overview;
-                    existingContractor.company_bin = obj.company_bin;
-                    existingContractor.contact_no = obj.contact_no;
-                    // NOTE: email, status flags and rescode are intentionally NOT updatable here.
-                    existingContractor.license_no = obj.license_no;
-                    existingContractor.num_of_client = obj.num_of_client;
-                    existingContractor.ong_num_of_client = obj.ong_num_of_client;
-                    existingContractor.contact_person = obj.contact_person;
-                    existingContractor.secondary_contact_no = obj.secondary_contact_no;
-                    existingContractor.designation = obj.designation;
-                    existingContractor.is_available = obj.is_available;
-                    existingContractor.experience = obj.experience;
-                    existingContractor.terms_condition = obj.terms_condition;
-                    existingContractor.business_type = obj.business_type;
-                    existingContractor.payment_mode = obj.payment_mode;
-                    existingContractor.owner_name = obj.owner_name;
-                    existingContractor.owner_id_no = obj.owner_id_no;
-                    existingContractor.owner_tin_no = obj.owner_tin_no;
-                    existingContractor.bankcode = obj.bankcode;
-                    existingContractor.branch = obj.branch;
-                    existingContractor.acc_name = obj.acc_name;
-                    existingContractor.acc_number = obj.acc_number;
-                    existingContractor.routeno = obj.routeno;
-                    existingContractor.links = obj.links;
-                    existingContractor.user_photo = obj.user_photo;
+                    existing.company_name = obj.company_name;
+                    existing.address = obj.address;
+                    existing.compan_overview = obj.compan_overview;
+                    existing.company_bin = obj.company_bin;
+                    existing.contact_no = obj.contact_no;
+                    existing.license_no = obj.license_no;
+                    existing.num_of_client = obj.num_of_client;
+                    existing.ong_num_of_client = obj.ong_num_of_client;
+                    existing.contact_person = obj.contact_person;
+                    existing.secondary_contact_no = obj.secondary_contact_no;
+                    existing.designation = obj.designation;
+                    existing.is_available = obj.is_available;
+                    existing.experience = obj.experience;
+                    existing.terms_condition = obj.terms_condition;
+                    existing.business_type = obj.business_type;
+                    existing.payment_mode = obj.payment_mode;
+                    existing.owner_name = obj.owner_name;
+                    existing.owner_id_no = obj.owner_id_no;
+                    existing.owner_tin_no = obj.owner_tin_no;
+                    existing.bankcode = obj.bankcode;
+                    existing.branch = obj.branch;
+                    existing.acc_name = obj.acc_name;
+                    existing.acc_number = obj.acc_number;
+                    existing.routeno = obj.routeno;
+                    existing.links = obj.links;
+                    existing.user_photo = obj.user_photo;
 
-                    obj = existingContractor;
+                    obj = existing;
                 }
 
                 await dbContext.SaveChangesAsync();
@@ -134,16 +142,11 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
             }
             catch (Exception ex)
             {
-                ErrorTrackingExtension.SetError(ex);
-                System.Diagnostics.Debug.WriteLine($"ERROR in InsertOrUpdateContractor: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
+                ErrorTrackingExtension.SetError(ex.InnerException ?? ex);
+                _logger.LogError(ex, "Update failed");
                 return null;
             }
         }
-
 
     }
 }
