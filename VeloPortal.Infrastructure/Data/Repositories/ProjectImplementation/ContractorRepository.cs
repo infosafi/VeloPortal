@@ -2,11 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
-using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.DTOs.ProjectImplementation;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
-using VeloPortal.Domain.Entities.Authentication;
 using VeloPortal.Domain.Entities.ProjectImplementation;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
@@ -87,7 +85,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
             }
         }
 
-        
+
         public async Task<ContractorProfile?> InsertOrUpdateContractor(ContractorProfile obj)
         {
             try
@@ -202,6 +200,37 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
             {
                 ErrorTrackingExtension.SetError(ex);
                 return await Task.FromResult<IEnumerable<DtoContractorDashboardCounter>?>(null);
+            }
+        }
+
+        public async Task<bool> SaveContractorSuply(IEnumerable<ContractorSuply> supplyItems)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                foreach (var item in supplyItems)
+                {
+                    var existing = await dbContext.ContractorSuply
+                        .FirstOrDefaultAsync(x => x.con_item_id == item.con_item_id && x.con_item_id != 0);
+
+                    if (existing == null)
+                    {
+                        await dbContext.ContractorSuply.AddAsync(item);
+                    }
+                    else
+                    {
+                        dbContext.Entry(existing).CurrentValues.SetValues(item);
+                    }
+                }
+
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
             }
         }
 
