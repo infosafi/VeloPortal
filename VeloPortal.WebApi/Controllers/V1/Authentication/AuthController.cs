@@ -97,6 +97,16 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                 }
             }
 
+            // Contractors self-register: only e-mail verified, non-held vendors may obtain a token.
+            if (string.Equals(dto.user_type?.Trim(), "contractor", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!await _contractorProfile.IsContractorLoginAllowedAsync(dto.comcod ?? "", user.unq_id))
+                {
+                    await LogLoginAttemptAsync(dto, user.unq_id, false, "Contractor email not verified or on hold", "");
+                    return Unauthorized(new { Success = false, message = "Account email is not verified or the account is on hold.", twofactor = false });
+                }
+            }
+
             var accessToken = _jwtService.GenerateAccessToken(user, dto.user_type);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -203,9 +213,13 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             var tokRole = oldPrincipal.FindFirst("user_role")?.Value ?? "";
 
             var user = await _userRepo.GetUserInfoByIdRole(tokComcod, tokUserType, Convert.ToString(storedToken.user_id), tokRole);
-            if (user != null && tokUserType == "vendor" &&
-                !await _vendorprofile.IsVendorLoginAllowedAsync(tokComcod, user.unq_id))
+
+            if (user != null && tokUserType == "vendor" && !await _vendorprofile.IsVendorLoginAllowedAsync(tokComcod, user.unq_id))
                 return Unauthorized();
+
+            if (user != null && tokUserType == "contractor" && !await _contractorProfile.IsContractorLoginAllowedAsync(tokComcod, user.unq_id))
+                return Unauthorized();
+
             var newAccessToken = _jwtService.GenerateAccessToken(user, tokUserType);
             var newRefreshToken = _jwtService.GenerateRefreshToken();
 
@@ -337,7 +351,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
                     {
                         comcod = dto.comcod,
                         company_name = dto.company_name ?? "",
-                        vendor_email = dto.email,
+                        contractor_email = dto.email,
                         contact_no = dto.phone,
                         contractor_password = EncryptionExtension.PasswordEnc(dto.password),
                         created_date = DateTime.Now,
@@ -377,6 +391,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
             }
         }
 
+
         private async Task<bool> SendVendorSignupOtpAsync(string comcod, int vendorProfileId, string email, string? companyName)
         {
             var code = await _secureOtp.IssueVendorSignupOtpAsync(comcod, vendorProfileId, HttpContext.Connection.RemoteIpAddress?.ToString());
@@ -384,13 +399,32 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             var name = System.Net.WebUtility.HtmlEncode(companyName ?? "");
             var body = $@"<div style=""font-family:Arial,sans-serif;max-width:480px;margin:auto"">
-<h2>VeloPortal email verification</h2>
-<p>Hello <strong>{name}</strong>, use this code to verify your email. It is valid for 10 minutes.</p>
-<p style=""font-size:36px;letter-spacing:8px;font-weight:bold"">{code}</p>
-<p style=""color:#777"">If you did not sign up, ignore this email.</p></div>";
+                            <h2>VeloPortal email verification</h2>
+                            <p>Hello <strong>{name}</strong>, use this code to verify your email. It is valid for 10 minutes.</p>
+                            <p style=""font-size:36px;letter-spacing:8px;font-weight:bold"">{code}</p>
+                            <p style=""color:#777"">If you did not sign up, ignore this email.</p>
+                          </div>";
             await EmailHelper.SendEmail(email, "Verify your VeloPortal email", body);
             return true;
         }
+
+
+        private async Task<bool> SendContractorSignupOtpAsync(string comcod, int contractorProfileId, string email, string? companyName)
+        {
+            var code = await _secureOtp.IssueContractorSignupOtpAsync(comcod, contractorProfileId, HttpContext.Connection.RemoteIpAddress?.ToString());
+            if (code == null) return false;
+
+            var name = System.Net.WebUtility.HtmlEncode(companyName ?? "");
+            var body = $@"<div style=""font-family:Arial,sans-serif;max-width:480px;margin:auto"">
+                            <h2>VeloPortal email verification</h2>
+                            <p>Hello <strong>{name}</strong>, use this code to verify your email. It is valid for 10 minutes.</p>
+                            <p style=""font-size:36px;letter-spacing:8px;font-weight:bold"">{code}</p>
+                            <p style=""color:#777"">If you did not sign up, ignore this email.</p>
+                          </div>";
+            await EmailHelper.SendEmail(email, "Verify your VeloPortal email", body);
+            return true;
+        }
+
 
         /// <summary>Confirms the vendor's email with the code that was e-mailed at signup.</summary>
         [HttpPost("verify-signup-otp")]
@@ -398,23 +432,36 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [AllowAnonymous]
         public async Task<IActionResult> VerifySignupOtp([FromBody] DtoVerifySignupOtp dto)
         {
-            // One identical answer for every failure (unknown e-mail, already verified, wrong/expired code, too many
-            // attempts) so the endpoint cannot be used to find out which e-mail addresses have a vendor account.
             var generic = BadRequest(new { Success = false, message = "Invalid or expired verification code. If needed, request a new code." });
-            if (string.IsNullOrWhiteSpace(dto.comcod) || string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.otp))
+
+            if (string.IsNullOrWhiteSpace(dto.comcod) || string.IsNullOrWhiteSpace(dto.email) || string.IsNullOrWhiteSpace(dto.otp) || string.IsNullOrWhiteSpace(dto.type))
                 return generic;
 
-            var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
-            if (vendor == null || vendor.is_email_verify == true) return generic;
+            if (dto.type == "contractor")
+            {
+                var contractor = await _contractorProfile.FindContractorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+                if (contractor == null || contractor.is_email_verify == true) return generic;
+                var res = await _secureOtp.VerifyContractorSignupOtpAsync(contractor.comcod, (int)contractor.contractor_profile_id, dto.otp);
+                if (res != OtpVerifyResult.Ok) return generic;
+                if (!await _contractorProfile.SetEmailVerifiedAsync(contractor.comcod, contractor.contractor_profile_id))
+                    return StatusCode(500, new { Success = false, message = "Could not complete verification. Please try again." });
+                return Ok(new { Success = true, message = "Email verified. You can now log in." });
+            }
 
-            var res = await _secureOtp.VerifyVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, dto.otp);
-            if (res != OtpVerifyResult.Ok) return generic;
+            if (dto.type == "vendor")
+            {
+                var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+                if (vendor == null || vendor.is_email_verify == true) return generic;
+                var res = await _secureOtp.VerifyVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, dto.otp);
+                if (res != OtpVerifyResult.Ok) return generic;
+                if (!await _vendorprofile.SetEmailVerifiedAsync(vendor.comcod, vendor.vendor_profile_id))
+                    return StatusCode(500, new { Success = false, message = "Could not complete verification. Please try again." });
+                return Ok(new { Success = true, message = "Email verified. You can now log in." });
+            }
 
-            if (!await _vendorprofile.SetEmailVerifiedAsync(vendor.comcod, vendor.vendor_profile_id))
-                return StatusCode(500, new { Success = false, message = "Could not complete verification. Please try again." });
-
-            return Ok(new { Success = true, message = "Email verified. You can now log in." });
+            return generic;
         }
+
 
         /// <summary>Sends a new signup verification code (60s cooldown). Always answers the same way.</summary>
         [HttpPost("resend-signup-otp")]
@@ -422,15 +469,27 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
         [AllowAnonymous]
         public async Task<IActionResult> ResendSignupOtp([FromBody] DtoResendSignupOtp dto)
         {
-            if (!string.IsNullOrWhiteSpace(dto.comcod) && !string.IsNullOrWhiteSpace(dto.email))
+            if (!string.IsNullOrWhiteSpace(dto.comcod) && !string.IsNullOrWhiteSpace(dto.email) && !string.IsNullOrWhiteSpace(dto.type))
             {
-                var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
-                if (vendor != null && vendor.is_email_verify != true && !string.IsNullOrEmpty(vendor.vendor_email))
-                    await SendVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, vendor.vendor_email, vendor.company_name);
+                if (dto.type == "vendor")
+                {
+                    var vendor = await _vendorprofile.FindVendorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+                    if (vendor != null && vendor.is_email_verify != true && !string.IsNullOrEmpty(vendor.vendor_email))
+                        await SendVendorSignupOtpAsync(vendor.comcod, (int)vendor.vendor_profile_id, vendor.vendor_email, vendor.company_name);
+                }
+
+                if (dto.type == "contractor")
+                {
+                    var contractor = await _contractorProfile.FindContractorByEmailAsync(dto.comcod.Trim(), dto.email.Trim());
+                    if (contractor != null && contractor.is_email_verify != true && !string.IsNullOrEmpty(contractor.contractor_email))
+                        await SendContractorSignupOtpAsync(contractor.comcod, (int)contractor.contractor_profile_id, contractor.contractor_email, contractor.company_name);
+                }
             }
+
             // Same reply whether or not the account exists (no user enumeration)
             return Ok(new { Success = true, message = "If the account exists and is not verified, a new code has been sent." });
         }
+
 
         /// <summary>
         /// Retrieves the full profile of a customer by email.
@@ -445,6 +504,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             return Ok(new { Success = true, data = user });
         }
+
 
         /// <summary>
         /// Updates the customer profile details.
@@ -470,6 +530,7 @@ namespace VeloPortal.WebApi.Controllers.V1.Authentication
 
             return StatusCode(500, new { Success = false, message = "Failed to update profile. Please check database logs." });
         }
+
 
         // ---------------- Password recovery (OTP) ----------------
         // The OTP is bound to the user (id + e-mail), stored only as an HMAC, single use, expires,
