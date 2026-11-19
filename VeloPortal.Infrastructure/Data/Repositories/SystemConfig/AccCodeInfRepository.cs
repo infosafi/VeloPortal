@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Data;
 using VeloPortal.Application.Interfaces.SystemConfig;
 using VeloPortal.Application.Settings;
+using VeloPortal.Domain.Entities.AccountsFinance;
 using VeloPortal.Domain.Extensions;
 using VeloPortal.Infrastructure.Data.DataContext;
 using VeloPortal.Infrastructure.Data.SPHelper;
@@ -33,6 +34,53 @@ namespace VeloPortal.Infrastructure.Data.Repositories.SystemConfig
             _spProcessAccess = new SPProcessAccess(connectionString);
         }
 
+        public async Task<IEnumerable<AccGenInf>?> GetAccGenInfListByStatusAndGenCode(string? comcod, string? gencod, bool? is_active)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    var query = dbContext.AccGenInf.Where(x => x.comcod == comcod && x.gencode != null && x.gencode.StartsWith(gencod ?? "")).AsNoTracking().AsQueryable();
+
+
+                    if (is_active.HasValue)
+                        query = query.Where(p => p.is_active == is_active.Value);
+
+                    return await query.OrderBy(x => x.gencode).ThenBy(x => x.seq).ToListAsync();
+
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Accounts General Code Retrival Failed");
+                return null;
+            }
+        }
+
+        public async Task<IEnumerable<AccGenInf>?> GetAccGenInfGroupCode(string? comcod)
+        {
+            try
+            {
+                using (var dbContext = _dbContextFactory.CreateDbContext())
+                {
+                    var query = dbContext.AccGenInf.Where(x => x.comcod == comcod && x.gencode != null && x.gencode.EndsWith(CodeBookExtension.ThreeZero)).AsNoTracking().AsQueryable();
+
+                    return await query.OrderBy(x => x.gencode).ThenBy(x => x.seq).ToListAsync();
+
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                _logger.LogError(ex, "Accounts General Code Retrival Failed");
+                return null;
+            }
+        }
         public async Task<IEnumerable<dynamic>?> GetUserWiseAccCodeBookInfo(string? comcod, string? label, string? search_query, int user_id, bool? is_manual_post, bool? is_last_head)
         {
             try
