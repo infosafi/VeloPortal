@@ -37,6 +37,7 @@ namespace VeloPortal.Infrastructure.Data.DataContext
 
         #region AccountsFinance
         public DbSet<FinCompReq> FinCompReq { get; set; }
+        public DbSet<AccGenInf> AccGenInf { get; set; }
         #endregion
 
         #region Common       
