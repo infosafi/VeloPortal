@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using VeloPortal.Application.DTOs.SystemConfig;
 using VeloPortal.Application.Interfaces.SystemConfig;
 using VeloPortal.Application.Settings;
@@ -23,14 +24,11 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
         /// <param name="comcod">This the Company Code, such like 11001.</param>
         /// <param name="gencode">This the General code, like 0101001.</param>
         /// <param name="is_active">This the current status of gencode.</param>
-        /// <param name="page_number">This the page number default 1.</param>
-        /// <param name="page_size">This the page size default 10.</param>        
         /// <param name="groupcodeonly">This the Boolean Paramter indicate Group code or all code, Default is false.</param>        
         /// 
         /// <returns>List of Account General Code</returns>
         [HttpGet("get-acc-gen-code")]
-        public async Task<IActionResult> GetCompanyWiseAccountsGeneralCodeBookInformation(string? comcod, string? gencode, bool? is_active,
-            int page_number = 1, int page_size = 10, bool groupcodeonly = false)
+        public async Task<IActionResult> GetCompanyWiseAccountsGeneralCodeBookInformation(string? comcod, string? gencode, bool? is_active, bool groupcodeonly = false)
         {
             if (groupcodeonly == true)
             {
@@ -53,14 +51,9 @@ namespace VeloPortal.WebApi.Controllers.V1.SystemConfig
                 return NotFound(ApiResponse<IEnumerable<AccGenInf>>.SuccessResponse(response, message: "No Data Found"));
 
             int totalcount = response.Count();
-            if (page_size > 0 && page_number > 0)
-            {
-                response = response.Skip((page_number - 1) * page_size).Take(page_size);
+            
 
-            }
-            var pagination = new PaginationMetadata(currentPage: page_number, pageSize: page_size, totalCount: totalcount);
-
-            return Ok(ApiResponse<IEnumerable<AccGenInf>>.SuccessResponse(response, pagination, message: ""));
+            return Ok(ApiResponse<IEnumerable<AccGenInf>>.SuccessResponse(response, message: $"Accounts General Code loaded successfully. (Data Found: {totalcount})"));
         }
 
 
