@@ -1,4 +1,5 @@
-﻿using VeloPortal.Application.DTOs.ProjectImplementation;
+﻿using VeloPortal.Application.DTOs.Procurement;
+using VeloPortal.Application.DTOs.ProjectImplementation;
 using VeloPortal.Domain.Entities.ProjectImplementation;
 
 namespace VeloPortal.Application.Interfaces.ProjectImplementation
@@ -12,6 +13,8 @@ namespace VeloPortal.Application.Interfaces.ProjectImplementation
         Task<dynamic?> FindUserByContractorIdAsync(string comcod,string? fromdate, string? todate, string contractor_profile_id);
         Task<IEnumerable<DtoContractorDashboardCounter>?> GetContractorDashboardCounter(string? comcod, string? user_role, string? user_id, string? res_code);
         Task<bool> SaveContractorSuply(IEnumerable<ContractorSuply> contractorSuply);
+        Task<IEnumerable<DtoContractorSupply>?> GetContractorSupplyItems(string? comcod, long? contractor_profile_id);
+        Task<bool> DeleteContractorSuplyById(string? comcod, long con_item_id);
 
     }
 }
