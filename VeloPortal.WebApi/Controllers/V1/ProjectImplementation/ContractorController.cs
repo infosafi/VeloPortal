@@ -1,7 +1,9 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.DTOs.ProjectImplementation;
+using VeloPortal.Application.Interfaces.Procurement;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
 using VeloPortal.Domain.Entities.Procurement;
@@ -151,6 +153,54 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<string>.FailureResponse(new List<string> { $"Error saving  Service resources: {ex.Message}" }, "Internal Server Error"));
+            }
+        }
+
+        /// <summary>
+        /// Get Contractor Supply Items List based on company and reference parameters.
+        /// </summary>
+        /// <param name="comcod">The Company Code, such as 11001.</param>
+        /// <param name="contractor_profile_id">The contractor profile unique id like 27.</param>
+        /// <param name="refid">The Reference/Vendor ID used for filtering supply items.</param> 
+        /// <param name="rescode">The Resource Code prefix to filter specific item types.</param>
+        /// <returns>A collection of Contractor Supply details including rates, lead times, and experience.</returns>
+        [HttpGet("get-contractor-supply-items")]
+        public async Task<IActionResult> GetContractorSupplyItemsList(string? comcod, long? contractor_profile_id)
+        {
+            var response = await _contractorProfile.GetContractorSupplyItems(comcod, contractor_profile_id);
+
+            if (response == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    new List<string> { "Contractor Supply Items not found" }, ErrorTrackingExtension.ErrorMsg ?? "Error Occured"));
+
+            return Ok(ApiResponse<IEnumerable<DtoContractorSupply>>.SuccessResponse(response, message: response.Count() + " Contractor Supply Items Found"));
+
+        }
+        
+        /// <summary>
+        /// Delete a specific Contractor Supply item.
+        /// </summary>
+        /// <param name="comcod">Company Code</param>
+        /// <param name="con_item_id">The Item/Resource  Code to delete</param>
+        /// <returns>A boolean indicating success or failure</returns>
+        [HttpPost("delete-contractor-supply-item")]
+        public async Task<IActionResult> DeleteContractorSuplyById(string comcod, long con_item_id)
+        {
+            try
+            {
+                var response = await _contractorProfile.DeleteContractorSuplyById(comcod, con_item_id);
+
+                if (response)
+                {
+                    return Ok(ApiResponse<bool>.SuccessResponse(response, message: "Item deleted successfully"));
+                }
+
+                return NotFound(ApiResponse<bool>.FailureResponse(
+                    new List<string> { "Item not found or already deleted" }, "Delete Failed"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.FailureResponse(new List<string> { ex.Message }, "Internal Error"));
             }
         }
     }

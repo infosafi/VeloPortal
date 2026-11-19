@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using VeloPortal.Application.DTOs.Procurement;
 using VeloPortal.Application.DTOs.ProjectImplementation;
 using VeloPortal.Application.Interfaces.ProjectImplementation;
 using VeloPortal.Application.Settings;
@@ -224,6 +225,52 @@ namespace VeloPortal.Infrastructure.Data.Repositories.ProjectImplementation
                     }
                 }
 
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return false;
+            }
+        }
+
+        public async Task<IEnumerable<DtoContractorSupply>?> GetContractorSupplyItems(string? comcod, long? contractor_profile_id)
+        {
+            try
+            {
+                if (_spProcessAccess == null)
+                {
+                    return await Task.FromResult<IEnumerable<DtoContractorSupply>?>(null);
+                }
+                IEnumerable<DtoContractorSupply>? lst = null;
+                DataSet? ds = _spProcessAccess.GetTransInfo20(comcod ?? "", "itv_prj.SP_SUBCONTRACTING_MGT", "Get_Contractor_Supply_Items", contractor_profile_id.ToString() ?? "");
+                if (ds == null || ds.Tables.Count == 0)
+                {
+                    return await Task.FromResult<IEnumerable<DtoContractorSupply>?>(null);
+                }
+
+                lst = ds.Tables[0].DataTableToList<DtoContractorSupply>();
+                return await Task.FromResult<IEnumerable<DtoContractorSupply>?>(lst);
+            }
+            catch (Exception ex)
+            {
+                ErrorTrackingExtension.SetError(ex);
+                return await Task.FromResult<IEnumerable<DtoContractorSupply>?>(null);
+            }
+        }
+
+        public async Task<bool> DeleteContractorSuplyById(string? comcod, long con_item_id)
+        {
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
+                var item = await dbContext.ContractorSuply.FirstOrDefaultAsync(d => d.comcod == comcod && d.con_item_id == con_item_id);
+
+                if (item == null) return false;
+
+                dbContext.ContractorSuply.Remove(item);
                 await dbContext.SaveChangesAsync();
                 return true;
             }
