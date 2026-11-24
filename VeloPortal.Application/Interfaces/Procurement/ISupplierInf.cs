@@ -6,6 +6,6 @@ namespace VeloPortal.Application.Interfaces.Procurement
     {
         Task<IEnumerable<DtoVendorSupply>?> GetSupplierSupplyItems(string? comcod, long? vendor_profile_id);
 
-        Task<bool> DeleteVendorSuplyById(int supItemId);
+        Task<bool> DeleteVendorSupplyItemsById(string? comcod, int sup_item_id);
     }
 }

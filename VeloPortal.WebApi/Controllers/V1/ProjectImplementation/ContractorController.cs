@@ -181,7 +181,7 @@ namespace VeloPortal.WebApi.Controllers.V1.ProjectImplementation
         /// Delete a specific Contractor Supply item.
         /// </summary>
         /// <param name="comcod">Company Code</param>
-        /// <param name="con_item_id">The Item/Resource  Code to delete</param>
+        /// <param name="con_item_id">The Item/Resource Code to delete</param>
         /// <returns>A boolean indicating success or failure</returns>
         [HttpPost("delete-contractor-supply-item")]
         public async Task<IActionResult> DeleteContractorSuplyById(string comcod, long con_item_id)
