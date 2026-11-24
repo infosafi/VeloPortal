@@ -53,13 +53,13 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             }
         }
 
-        public async Task<bool> DeleteVendorSuplyById(int supItemId)
+        public async Task<bool> DeleteVendorSupplyById(string? comcod, int sup_item_id)
         {
             try
             {
                 using var dbContext = _dbContextFactory.CreateDbContext();
 
-                var item = await dbContext.VendorSuply.FindAsync(supItemId);
+                var item = await dbContext.VendorSuply.FirstOrDefaultAsync(d => d.comcod == comcod && d.sup_item_id == sup_item_id);
 
                 if (item == null) return false;
 
