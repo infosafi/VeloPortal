@@ -45,11 +45,11 @@ namespace VeloPortal.WebApi.Controllers.V1.Procurement.Supplier
         /// <param name="sup_item_id">The Item/Resource Code to delete</param>
         /// <returns>A boolean indicating success or failure</returns>
         [HttpPost("delete-supplier-supply-item")]
-        public async Task<IActionResult> DeleteVendorSuply(string? comcod, int sup_item_id)
+        public async Task<IActionResult> DeleteVendorSupplyItemsById(string? comcod, int sup_item_id)
         {
             try
             {
-                var response = await _supplierInf.DeleteVendorSupplyById(comcod ?? "", sup_item_id);
+                var response = await _supplierInf.DeleteVendorSupplyItemsById(comcod ?? "", sup_item_id);
 
                 if (response)
                 {

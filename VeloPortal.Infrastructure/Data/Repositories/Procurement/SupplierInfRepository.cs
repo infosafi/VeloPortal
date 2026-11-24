@@ -53,7 +53,7 @@ namespace VeloPortal.Infrastructure.Data.Repositories.Procurement
             }
         }
 
-        public async Task<bool> DeleteVendorSupplyById(string? comcod, int sup_item_id)
+        public async Task<bool> DeleteVendorSupplyItemsById(string? comcod, int sup_item_id)
         {
             try
             {
